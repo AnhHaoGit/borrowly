@@ -30,7 +30,7 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts",
     "types/book.ts",
-    "data/book.js"
+    "database/book.js"
   ],
   "exclude": ["node_modules"]
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "books" ADD COLUMN "author_image_url" text;

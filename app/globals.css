@@ -8,6 +8,7 @@
   --color-primary: #62202f;
   --color-secondary: #9a4a60;
   --color-muted: #7d6166;
+  --color-danger: #b42318;
 
   --font-bona: var(--bona-nova), Georgia, "Times New Roman", serif;
   --font-sans: var(--bona-nova), Georgia, "Times New Roman", serif;

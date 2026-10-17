@@ -12,6 +12,11 @@ export const GENRES: string[] = [
   "Self-Help",
   "Kids",
   "Fiction",
+  "Horror",
+  "Philosophy",
+  "Science",
+  "Adventure",
+  "Humor",
 ];
 
 // 200 quyển, id từ 1 đến 200.

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import BooksExplorer from "@/components/books/BooksExplorer";
-import { books, GENRES } from "../../../data/books";
+import { books, GENRES } from "../../../database/books";
 
 export const metadata: Metadata = { title: "Books" };
 

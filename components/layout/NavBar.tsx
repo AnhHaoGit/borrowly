@@ -55,10 +55,10 @@ const Navbar = () => {
             </Link>
           ))}
           <Link
-            href="/login"
+            href="/sign-in"
             className="ml-1 rounded-full bg-primary px-6 py-2 text-base text-background transition hover:bg-secondary"
           >
-            Login
+            Sign in
           </Link>
         </nav>
 
@@ -98,11 +98,11 @@ const Navbar = () => {
             ))}
             <li>
               <Link
-                href="/login"
+                href="/sign-in"
                 onClick={() => setOpen(false)}
                 className="block rounded-xl bg-primary px-4 py-3 text-center text-lg text-background"
               >
-                Login
+                Sign in
               </Link>
             </li>
           </ul>
