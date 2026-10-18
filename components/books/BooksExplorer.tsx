@@ -1,13 +1,17 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 
 import SearchBar from "./SearchBar";
 import FilterPanel from "./FilterPanel";
 import BookGrid from "./BookGrid";
 import Pagination from "./Pagination";
+import { PageLoader } from "@/components/ui/Loader";
 import { PAGE_SIZE, SORTERS } from "../../lib/books";
+import { notify } from "@/lib/toast";
 import type { Book, Filters } from "../../types/book";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 const DEFAULT_FILTERS: Filters = {
   query: "",
@@ -28,6 +32,16 @@ const BooksExplorer = ({ books, genres }: Props) => {
   const [page, setPage] = useState(1);
   const [borrowedIds, setBorrowedIds] = useState<Set<number>>(new Set());
   const resultsRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  const { status } = useSession();
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      notify.info("Please sign in to browse books.", { id: "auth-required" });
+      router.replace("/sign-in");
+    }
+  }, [status, router]);
 
   const filtered = useMemo(() => {
     const q = filters.query.trim().toLowerCase();
@@ -53,7 +67,15 @@ const BooksExplorer = ({ books, genres }: Props) => {
         return matchQuery && matchGenre && matchYear && matchStatus;
       })
       .sort(SORTERS[filters.sort]);
-  }, [books, filters]);
+  }, [books, filters]); // tác dụng của useMemo: chỉ recompute khi books hoặc filters thay đổi
+
+  // Đang kiểm tra phiên, hoặc đang chuyển hướng vì chưa đăng nhập: hiện loader thay vì nháy giao diện sách
+  if (status === "loading") {
+    return <PageLoader label="Loading your library…" />;
+  }
+  if (status === "unauthenticated") {
+    return <PageLoader label="Taking you to sign in…" />;
+  }
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -73,13 +95,24 @@ const BooksExplorer = ({ books, genres }: Props) => {
         : [...filters.genres, genre],
     });
 
-  const toggleBorrow = (id: number) =>
+  const toggleBorrow = (id: number) => {
+    const book = books.find((b) => b.id === id);
+    const adding = !borrowedIds.has(id);
+
     setBorrowedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
+
+    if (!book) return;
+    if (adding) {
+      notify.success("Added to your borrow list", { description: book.title });
+    } else {
+      notify.info("Removed from your borrow list", { description: book.title });
+    }
+  };
 
   const goToPage = (p: number) => {
     setPage(p);

@@ -14,6 +14,8 @@ import SubmitButton from "./SubmitButton";
 import TextField from "./TextField";
 import { useRouter } from "next/navigation";
 import type { AuthCredentials } from "@/types/user";
+import { notify } from "@/lib/toast";
+import { useSession } from "next-auth/react";
 
 interface Props {
   action?: (
@@ -31,8 +33,8 @@ const INITIAL_VALUES: SignUpValues = {
 const SignUpForm = ({ action }: Props) => {
   const [values, setValues] = useState<SignUpValues>(INITIAL_VALUES);
   const [errors, setErrors] = useState<FieldErrors<SignUpValues>>({});
-  const [formError, setFormError] = useState<string | null | undefined>(null);
   const [pending, setPending] = useState(false);
+  const { update: refreshSession } = useSession();
 
   const router = useRouter();
 
@@ -50,7 +52,6 @@ const SignUpForm = ({ action }: Props) => {
 
     const nextErrors = validateSignUp(values);
     setErrors(nextErrors);
-    setFormError(null);
 
     const firstInvalid = Object.keys(nextErrors)[0];
     if (firstInvalid) {
@@ -65,14 +66,20 @@ const SignUpForm = ({ action }: Props) => {
         email: values.email.trim(),
         password: values.password,
       });
+      if (!result) return;
 
-      if (result?.success) {
-        router.push("/");
-      } else {
-        setFormError(result?.error);
+      if (!result.success) {
+        notify.error(result.error ?? "Something went wrong. Please try again.");
+        return;
       }
+
+      await refreshSession();
+      notify.success("Account created. Welcome to Borrowly!");
+      router.push("/books");
+      setValues(INITIAL_VALUES);
+      router.refresh();
     } catch {
-      setFormError("Something went wrong. Please try again.");
+      notify.error("Something went wrong. Please try again.");
     } finally {
       setPending(false);
     }
@@ -81,15 +88,6 @@ const SignUpForm = ({ action }: Props) => {
   return (
     <form noValidate onSubmit={handleSubmit} className="space-y-7">
       <h2 className="text-3xl font-bold text-primary">Create account</h2>
-
-      {formError && (
-        <p
-          role="alert"
-          className="rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger"
-        >
-          {formError}
-        </p>
-      )}
 
       <TextField
         label="Full name"

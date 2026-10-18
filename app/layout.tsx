@@ -4,6 +4,7 @@ import "./globals.css";
 
 import Navbar from "../components/layout/NavBar";
 import Footer from "../components/layout/Footer";
+import Providers from "@/components/layout/Providers";
 
 const bonaNova = localFont({
   src: [
@@ -36,9 +37,11 @@ const RootLayout = ({ children }: LayoutProps<"/">) => {
   return (
     <html lang="en" className={`${bonaNova.variable} h-full`}>
       <body className="flex min-h-full flex-col">
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <Providers>
+          <Navbar />
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </Providers>
       </body>
     </html>
   );

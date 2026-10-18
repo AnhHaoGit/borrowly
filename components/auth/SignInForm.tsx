@@ -13,6 +13,8 @@ import SubmitButton from "./SubmitButton";
 import TextField from "./TextField";
 import { AuthCredentials } from "@/types/user";
 import { useRouter } from "next/navigation";
+import { notify } from "@/lib/toast";
+import { useSession } from "next-auth/react";
 
 interface Props {
   action?: (
@@ -25,8 +27,8 @@ const INITIAL_VALUES: SignInValues = { email: "", password: "" };
 const SignInForm = ({ action }: Props) => {
   const [values, setValues] = useState<SignInValues>(INITIAL_VALUES);
   const [errors, setErrors] = useState<FieldErrors<SignInValues>>({});
-  const [formError, setFormError] = useState<string | null | undefined>(null);
   const [pending, setPending] = useState(false);
+  const { update: refreshSession } = useSession();
 
   const router = useRouter();
 
@@ -44,7 +46,6 @@ const SignInForm = ({ action }: Props) => {
 
     const nextErrors = validateSignIn(values);
     setErrors(nextErrors);
-    setFormError(null);
 
     const firstInvalid = Object.keys(nextErrors)[0];
     if (firstInvalid) {
@@ -58,12 +59,21 @@ const SignInForm = ({ action }: Props) => {
         email: values.email.trim(),
         password: values.password,
       });
-      if (result?.success) {
-        router.push("/");
-      } else {
-        setFormError(result?.error);
-      }    } catch {
-      setFormError("Something went wrong. Please try again.");
+      if (!result) return;
+
+      if (!result.success) {
+        notify.error(result.error ?? "Something went wrong. Please try again.");
+        return;
+      }
+
+      await refreshSession(); // cho Navbar nhận ra đã đăng nhập ngay, không phải chờ
+      notify.success("Welcome back!");
+      router.push("/books");
+      setValues(INITIAL_VALUES);
+
+      router.refresh();
+    } catch {
+      notify.error("Something went wrong. Please try again.");
     } finally {
       setPending(false);
     }
@@ -72,15 +82,6 @@ const SignInForm = ({ action }: Props) => {
   return (
     <form noValidate onSubmit={handleSubmit} className="space-y-7">
       <h2 className="text-3xl font-bold text-primary">Log in</h2>
-
-      {formError && (
-        <p
-          role="alert"
-          className="rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger"
-        >
-          {formError}
-        </p>
-      )}
 
       <TextField
         label="Email"
