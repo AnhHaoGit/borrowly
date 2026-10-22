@@ -11,7 +11,7 @@ import UserMenu from "../ui/UserMenu";
 
 const LINKS = [
   { href: "/books", label: "Books" },
-  { href: "/receipts", label: "Receipts" },
+  { href: "/profile", label: "Profile" },
 ];
 
 const Navbar = () => {

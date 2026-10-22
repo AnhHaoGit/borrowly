@@ -3,8 +3,8 @@ import type { Book } from "@/types/book";
 
 interface Props {
   books: Book[];
-  borrowedIds: Set<number>;
-  onToggleBorrow: (id: number) => void;
+  borrowedIds: Set<string>;
+  onToggleBorrow: (id: string) => void;
 }
 
 const BookGrid = ({ books, borrowedIds, onToggleBorrow }: Props) => {

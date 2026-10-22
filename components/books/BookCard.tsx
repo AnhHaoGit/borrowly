@@ -1,32 +1,28 @@
 import Image from "next/image";
 import { LuBookmarkPlus, LuBookOpen, LuCheck } from "react-icons/lu";
-import { coverUrl } from "../../lib/books";
 import type { Book } from "../../types/book";
 
 interface Props {
   book: Book;
   borrowed: boolean;
-  onToggle: (id: number) => void;
+  onToggle: (id: string) => void;
 }
 
 const BookCard = ({ book, borrowed, onToggle }: Props) => {
-  const remaining = book.available_quantity - (borrowed ? 1 : 0);
-  const outOfStock = book.available_quantity <= 0;
+  const remaining = book.availableQuantity - (borrowed ? 1 : 0);
+  const outOfStock = book.availableQuantity <= 0;
 
   return (
     <article className="group flex h-full flex-col rounded-2xl border border-accent bg-surface p-4 shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-lift">
       {/* Cover */}
-      <div className="relative mx-auto aspect-2/3 w-full max-w-[180px] overflow-hidden rounded-lg bg-accent/40 shadow-md ring-1 ring-primary/10">
-        {book.cover_id ? (
+      <div className="relative mx-auto aspect-2/3 w-full max-w-45 overflow-hidden rounded-lg bg-accent/40 shadow-md ring-1 ring-primary/10">
+        {book.coverUrl ? (
           <Image
-            src={coverUrl(book.cover_id)}
+            src={book.coverUrl}
             alt={`Cover of ${book.title}`}
             fill
-            unoptimized
-            sizes="180px"
-            className={`object-cover transition duration-500 group-hover:scale-105 ${
-              outOfStock ? "opacity-70 grayscale-[40%]" : ""
-            }`}
+            sizes="(max-width: 768px) 80vw, 180px"
+            className="object-cover"
           />
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-2 p-3 text-center text-secondary">
@@ -48,8 +44,8 @@ const BookCard = ({ book, borrowed, onToggle }: Props) => {
           {book.title}
         </h3>
         <p className="mt-0.5 line-clamp-1 text-sm text-secondary">
-          {book.author_name}
-          {book.publish_year ? ` · ${book.publish_year}` : ""}
+          {book.authorName}
+          {book.publishYear ? ` · ${book.publishYear}` : ""}
         </p>
 
         {book.summary && (

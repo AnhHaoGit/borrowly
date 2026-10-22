@@ -1,18 +1,31 @@
 export interface Book {
-  id: number;
+  id: string;
   title: string;
-  author_name: string;
+  authorName: string;
+  authorImageUrl: string | null;
   genre: string;
-  publish_year: number | null;
-  cover_id: number | null;
+  publishYear: number;
+  coverUrl: string;
   summary: string;
   description: string;
-  available_quantity: number;
+  availableQuantity: number;
+  rating: number | null;
+  borrowCount: number;
+  language: string;
+  subjects: string[];
+  subjectPlaces: string[];
+  subjectTimes: string[];
+  publishers: string[];
+  createdAt: Date;
 }
 
 export type Status = "all" | "available" | "unavailable";
-export type SortKey = "default" | "title" | "year-desc" | "year-asc";
-
+export type SortKey =
+  | "default"
+  | "title-asc"
+  | "title-desc"
+  | "year-desc"
+  | "year-asc";
 export interface Filters {
   query: string;
   genres: string[];

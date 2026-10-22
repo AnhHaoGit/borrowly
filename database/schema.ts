@@ -47,8 +47,6 @@ export const books = pgTable(
     summary: text("summary").notNull(),
     description: text("description").notNull(),
     availableQuantity: integer("available_quantity").notNull().default(0),
-
-    // ===== Mới =====
     rating: real("rating"), // null = chưa có đánh giá
     borrowCount: integer("borrow_count").notNull().default(0),
     language: text("language").notNull(),
