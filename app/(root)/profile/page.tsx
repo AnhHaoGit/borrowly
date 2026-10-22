@@ -64,7 +64,7 @@ function BookCard({ book }: { book: RentedBook }) {
 export default function ProfilePage() {
   return (
     // The shared header/footer belong in layout.tsx, so this page only returns its content.
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-[#fbf7e8]">
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-6 text-gray-800">My Profile</h1>
 
@@ -97,7 +97,7 @@ export default function ProfilePage() {
           <h2 className="text-xl font-bold mb-4 text-gray-800">Rented Books</h2>
 
           {mockRentedBooks.length === 0 ? (
-            <p className="text-gray-500">You haven&apos;t rented any books yet.</p>
+            <p className="text-gray-700">You haven't rented any books yet.</p>
           ) : (
             <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
               {mockRentedBooks.map((book) => (
