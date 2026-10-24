@@ -27,7 +27,7 @@ export const books: Book[] = [
     id: 1,
     title: "The Hobbit",
     author_name: "J. R. R. Tolkien",
-    genre: "Fantasy",
+    genre: "Fantasy, Adventure, Magic, Classic",
     publish_year: 1937,
     cover_id: 1,
     summary: "A quiet hobbit is swept into a dragon-hunting quest.",

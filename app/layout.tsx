@@ -1,7 +1,8 @@
+
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-
+import { Suspense } from 'react';
 import Navbar from "../components/layout/NavBar";
 import Footer from "../components/layout/Footer";
 
@@ -34,9 +35,13 @@ export const metadata: Metadata = {
 
 const RootLayout = ({ children }: LayoutProps<"/">) => {
   return (
+    
     <html lang="en" className={`${bonaNova.variable} h-full`}>
       <body className="flex min-h-full flex-col">
-        <Navbar />
+        <Suspense fallback={null}>
+          <Navbar />
+        </Suspense>
+      
         <main className="flex-1">{children}</main>
         <Footer />
       </body>

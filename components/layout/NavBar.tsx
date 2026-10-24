@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { LuBookOpen, LuMenu, LuX } from "react-icons/lu";
+import { Suspense } from 'react';
 
 const LINKS = [
   { href: "/books", label: "Books" },

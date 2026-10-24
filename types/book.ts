@@ -2,6 +2,7 @@ export interface Book {
   id: number;
   title: string;
   author_name: string;
+  author_avatar?: string;
   genre: string;
   publish_year: number | null;
   cover_id: number | null;
