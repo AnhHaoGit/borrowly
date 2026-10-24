@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import BooksExplorer from "@/components/books/BooksExplorer";
-import { books, GENRES } from "../../../database/books";
+import { GENRES } from "../../../database/books";
 
-export const metadata: Metadata = { title: "Books" };
-
-const BooksPage = () => {
-  return <BooksExplorer books={books} genres={GENRES} />;
+export const metadata: Metadata = {
+  title: "Books",
 };
 
-export default BooksPage;
+export default function BooksPage() {
+  return <BooksExplorer genres={GENRES} />;
+}

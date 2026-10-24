@@ -1,4 +1,8 @@
-import { LuCheck, LuChevronDown, LuRotateCcw, LuSlidersHorizontal } from "react-icons/lu";
+import {
+  LuChevronDown,
+  LuRotateCcw,
+  LuSlidersHorizontal,
+} from "react-icons/lu";
 import type { Filters, SortKey, Status } from "@/types/book";
 
 interface Props {
@@ -16,8 +20,9 @@ const STATUS_OPTIONS: { value: Status; label: string }[] = [
 ];
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-  { value: "default", label: "Most relevant" },
-  { value: "title", label: "Title (A → Z)" },
+  { value: "default", label: "Default" },
+  { value: "title-asc", label: "Title (A → Z)" },
+  { value: "title-desc", label: "Title (Z → A)" },
   { value: "year-desc", label: "Newest first" },
   { value: "year-asc", label: "Oldest first" },
 ];
@@ -50,13 +55,6 @@ const Chip = ({
         : "border-accent bg-background text-secondary hover:bg-accent/50"
     }`}
   >
-    <span
-      className={`grid size-4 place-items-center rounded-[4px] border-2 border-secondary transition ${
-        checked ? "bg-secondary text-background" : "bg-transparent"
-      }`}
-    >
-      {checked && <LuCheck className="size-3" strokeWidth={4} />}
-    </span>
     {label}
   </button>
 );

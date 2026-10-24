@@ -24,7 +24,7 @@ const bonaNova = Bona_Nova({
   weight: ['400', '700'],
 });
 export default function BookDetail({ book }: Props) {
-  const outOfStock = book.available_quantity <= 0;
+  const outOfStock = book.availableQuantity <= 0;
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   return (<div className={`${bonaNova.className} min-h-screen bg-[#fbf7e8] text-[#62202f] p-4 md:p-8 flex flex-col gap-8`}>
@@ -55,9 +55,9 @@ export default function BookDetail({ book }: Props) {
                 
                 {/*ẢNH BÌA SÁCH */}
                 <div className="w-full aspect-[3/4] bg-white/70 rounded-2xl border border-[#62202f]/20 overflow-hidden relative shadow-inner">
-                  {book.cover_id ? (
+                  {book.id ? (
                             <Image
-                              src={coverUrl(book.cover_id)}
+                              src={coverUrl(book.id)}
                               alt={`Cover of ${book.title}`}
                               fill
                               unoptimized
@@ -122,10 +122,10 @@ export default function BookDetail({ book }: Props) {
           {/* Tác Giả */}
           <div className="flex flex-col items-center gap-2 min-w-[120px]">
             <div className="w-24 h-24 rounded-full bg-white border-2 border-[#F57F7F] flex items-center justify-center overflow-hidden relative shadow-sm">
-              {book.author_avatar ? (
+              {book.authorAvatar ? (
                 <Image 
-                src={book.author_avatar} 
-                alt={book.author_name || "Author"} 
+                src={book.authorAvatar} 
+                alt={book.authorName || "Author"} 
                 fill 
                 className="object-cover"
               />
@@ -134,7 +134,7 @@ export default function BookDetail({ book }: Props) {
             )}
            </div>
             <span className="font-bold text-xs tracking-wider text-center">
-              {book.author_name || "Unknown Author"}
+              {book.authorName || "Unknown Author"}
             </span>
           </div>
 
@@ -159,10 +159,10 @@ export default function BookDetail({ book }: Props) {
             <div className="flex flex-wrap items-center gap-3 text-xs font-bold">
               <span className="mr-2">STATUS :</span>
   
-              {/* Nút AVAILABLE: Sáng màu hồng khi available_quantity > 0, ngược lại màu be */}
+              {/* Nút AVAILABLE: Sáng màu hồng khi availableQuantity > 0, ngược lại màu be */}
               <button 
                  className={`px-5 py-2 rounded-full font-bold shadow-sm transition-colors ${
-                  book.available_quantity > 0 
+                  book.availableQuantity > 0 
                    ? "bg-[#F57F7F] text-[#62202f]" 
                    : "bg-[#fbf7e8]/60 text-[#62202f]/60 font-normal"
                }`}
@@ -170,10 +170,10 @@ export default function BookDetail({ book }: Props) {
                AVAILABLE
               </button>
 
-              {/* Nút CHECKED OUT: Sáng màu hồng khi available_quantity <= 0, ngược lại màu be */}
+              {/* Nút CHECKED OUT: Sáng màu hồng khi availableQuantity <= 0, ngược lại màu be */}
               <button 
                 className={`px-5 py-2 rounded-full font-bold shadow-sm transition-colors ${
-                 book.available_quantity <= 0 
+                 book.availableQuantity <= 0 
                  ? "bg-[#F57F7F] text-[#62202f]" 
                  : "bg-[#fbf7e8]/60 text-[#62202f]/60 font-normal"
                }`}

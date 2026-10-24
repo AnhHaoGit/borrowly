@@ -8,7 +8,6 @@ export async function generateStaticParams() {
   }));
 }
 
-// 1. Tạo một component con chuyên xử lý async params và tìm sách
 async function BookDetailLoader({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const book = books.find((b) => b.id.toString() === id);
@@ -20,7 +19,6 @@ async function BookDetailLoader({ params }: { params: Promise<{ id: string }> })
   return <BookDetail book={book} />;
 }
 
-// 2. Component chính chỉ làm nhiệm vụ bọc Suspense để thỏa mãn cơ chế cache của nhóm
 export default function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
   return (
     <main>

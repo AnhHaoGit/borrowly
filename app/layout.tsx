@@ -1,10 +1,10 @@
-
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import { Suspense } from 'react';
+
 import Navbar from "../components/layout/NavBar";
 import Footer from "../components/layout/Footer";
+import Providers from "@/components/layout/Providers";
 
 const bonaNova = localFont({
   src: [
@@ -35,15 +35,13 @@ export const metadata: Metadata = {
 
 const RootLayout = ({ children }: LayoutProps<"/">) => {
   return (
-    
     <html lang="en" className={`${bonaNova.variable} h-full`}>
       <body className="flex min-h-full flex-col">
-        <Suspense fallback={null}>
+        <Providers>
           <Navbar />
-        </Suspense>
-      
-        <main className="flex-1">{children}</main>
-        <Footer />
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </Providers>
       </body>
     </html>
   );

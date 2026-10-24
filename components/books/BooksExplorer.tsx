@@ -1,13 +1,17 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-
+import { useCallback, useEffect, useRef, useState } from "react";
 import SearchBar from "./SearchBar";
 import FilterPanel from "./FilterPanel";
 import BookGrid from "./BookGrid";
 import Pagination from "./Pagination";
-import { PAGE_SIZE, SORTERS } from "../../lib/books";
+import { PageLoader } from "@/components/ui/Loader";
+import { notify } from "@/lib/toast";
 import type { Book, Filters } from "../../types/book";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+
+const PAGE_SIZE = 12;
 
 const DEFAULT_FILTERS: Filters = {
   query: "",
@@ -19,61 +23,129 @@ const DEFAULT_FILTERS: Filters = {
 };
 
 interface Props {
-  books: Book[];
   genres: string[];
 }
 
-const BooksExplorer = ({ books, genres }: Props) => {
+interface BooksResponse {
+  items: Book[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+const BooksExplorer = ({ genres }: Props) => {
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [page, setPage] = useState(1);
-  const [borrowedIds, setBorrowedIds] = useState<Set<number>>(new Set());
+  const [borrowedIds, setBorrowedIds] = useState<Set<string>>(new Set());
+
+  const [books, setBooks] = useState<Book[]>([]);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const resultsRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const { status } = useSession();
 
-  const filtered = useMemo(() => {
-    const q = filters.query.trim().toLowerCase();
-    const min = filters.yearMin === "" ? -Infinity : Number(filters.yearMin);
-    const max = filters.yearMax === "" ? Infinity : Number(filters.yearMax);
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      notify.info("Please sign in to browse books.", {
+        id: "auth-required",
+      });
+      router.replace("/sign-in");
+    }
+  }, [status, router]);
 
-    return books
-      .filter((b) => {
-        const matchQuery =
-          !q ||
-          b.title.toLowerCase().includes(q) ||
-          b.author_name.toLowerCase().includes(q);
-        const matchGenre =
-          filters.genres.length === 0 || filters.genres.includes(b.genre);
-        const matchYear =
-          b.publish_year === null
-            ? filters.yearMin === "" && filters.yearMax === ""
-            : b.publish_year >= min && b.publish_year <= max;
-        const inStock = b.available_quantity > 0;
-        const matchStatus =
-          filters.status === "all" ||
-          (filters.status === "available" ? inStock : !inStock);
-        return matchQuery && matchGenre && matchYear && matchStatus;
-      })
-      .sort(SORTERS[filters.sort]);
-  }, [books, filters]);
+  const fetchBooks = useCallback(
+    async (signal: AbortSignal) => {
+      const params = new URLSearchParams();
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const currentPage = Math.min(page, totalPages);
-  const startIndex = (currentPage - 1) * PAGE_SIZE;
-  const visible = filtered.slice(startIndex, startIndex + PAGE_SIZE);
+      params.set("page", String(page));
+      params.set("query", filters.query.trim());
+      params.set("status", filters.status);
+      params.set("sort", String(filters.sort));
 
-  // Đổi bộ lọc thì về trang 1
+      filters.genres.forEach((genre) => {
+        params.append("genre", genre);
+      });
+
+      if (filters.yearMin !== "") {
+        params.set("yearMin", filters.yearMin);
+      }
+
+      if (filters.yearMax !== "") {
+        params.set("yearMax", filters.yearMax);
+      }
+
+      try {
+        const response = await fetch(`/api/books?${params.toString()}`, {
+          signal,
+        });
+
+        if (!response.ok) {
+          throw new Error("Unable to load books.");
+        }
+
+        const data: BooksResponse = await response.json();
+
+        if (signal.aborted) return;
+
+        setBooks(data.items);
+        setTotal(data.total);
+        setTotalPages(Math.max(1, data.totalPages));
+        setError(null);
+      } catch (err) {
+        if (signal.aborted) return;
+
+        setError("Failed to load books. Please try again.");
+        setBooks([]);
+      } finally {
+        if (!signal.aborted) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [page, filters],
+  );
+
+  useEffect(() => {
+    if (status !== "authenticated") return;
+
+    const controller = new AbortController();
+
+    // Trì hoãn fetch sang microtask để tránh cập nhật state
+    // đồng bộ ngay trong lúc effect chạy.
+    Promise.resolve().then(() => {
+      if (!controller.signal.aborted) {
+        setIsLoading(true);
+        void fetchBooks(controller.signal);
+      }
+    });
+
+    return () => controller.abort();
+  }, [status, fetchBooks]);
+
   const updateFilters = (patch: Partial<Filters>) => {
     setFilters((prev) => ({ ...prev, ...patch }));
     setPage(1);
   };
 
-  const toggleGenre = (genre: string) =>
+  const toggleGenre = (genre: string) => {
     updateFilters({
       genres: filters.genres.includes(genre)
         ? filters.genres.filter((g) => g !== genre)
         : [...filters.genres, genre],
     });
+  };
 
-  const toggleBorrow = (id: number) =>
+  const toggleBorrow = (id: string) => {
+    const book = books.find((b) => b.id === id);
+    if (!book) return;
+
+    const adding = !borrowedIds.has(id);
+
     setBorrowedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -81,15 +153,33 @@ const BooksExplorer = ({ books, genres }: Props) => {
       return next;
     });
 
-  const goToPage = (p: number) => {
-    setPage(p);
-    resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (adding) {
+      notify.success("Added to your borrow list", {
+        description: book.title,
+      });
+    } else {
+      notify.info("Removed from your borrow list", {
+        description: book.title,
+      });
+    }
+  };
+
+  const goToPage = (nextPage: number) => {
+    setPage(Math.max(1, Math.min(nextPage, totalPages)));
+    resultsRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   };
 
   const resetFilters = () => {
     setFilters(DEFAULT_FILTERS);
     setPage(1);
   };
+
+  if (status === "loading" || status === "unauthenticated") {
+    return <PageLoader label="Loading your library…" />;
+  }
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 pb-20 pt-8 sm:px-6">
@@ -113,18 +203,20 @@ const BooksExplorer = ({ books, genres }: Props) => {
         className="flex scroll-mt-28 flex-wrap items-center justify-between gap-2 text-muted"
       >
         <p>
-          {filtered.length === 0 ? (
+          {total === 0 ? (
             "0 books"
           ) : (
             <>
               Showing{" "}
               <b className="text-primary">
-                {startIndex + 1}–{startIndex + visible.length}
+                {(page - 1) * PAGE_SIZE + 1}–
+                {(page - 1) * PAGE_SIZE + books.length}
               </b>{" "}
-              of <b className="text-primary">{filtered.length}</b> books
+              of <b className="text-primary">{total}</b> books
             </>
           )}
         </p>
+
         {borrowedIds.size > 0 && (
           <p className="rounded-full bg-accent px-3 py-1 text-sm text-primary">
             {borrowedIds.size} {borrowedIds.size === 1 ? "book" : "books"} to
@@ -133,17 +225,30 @@ const BooksExplorer = ({ books, genres }: Props) => {
         )}
       </div>
 
-      <BookGrid
-        books={visible}
-        borrowedIds={borrowedIds}
-        onToggleBorrow={toggleBorrow}
-      />
+      {error ? (
+        <div className="space-y-3 py-8 text-center">
+          <p>{error}</p>
+          <button
+            className="rounded-lg border px-4 py-2"
+            onClick={() => {
+              const controller = new AbortController();
+              void fetchBooks(controller.signal);
+            }}
+          >
+            Try again
+          </button>
+        </div>
+      ) : isLoading ? (
+        <PageLoader label="Loading books..." />
+      ) : (
+        <BookGrid
+          books={books}
+          borrowedIds={borrowedIds}
+          onToggleBorrow={toggleBorrow}
+        />
+      )}
 
-      <Pagination
-        current={currentPage}
-        total={totalPages}
-        onChange={goToPage}
-      />
+      <Pagination current={page} total={totalPages} onChange={goToPage} />
     </div>
   );
 };
