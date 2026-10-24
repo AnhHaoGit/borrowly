@@ -1,39 +1,15 @@
 import Image from "next/image";
+import {
+  getUserById,
+  getRentedBooksByUserId,
+  type RentedBook,
+} from "@/database/queries.mock";
 
-// type
-type User = {
-  name: string;
-  email: string;
-  dateOfBirth: string; // ISO date, e.g. "2020-12-18"
-  phone: string;
-  avatarUrl: string;
-};
+// Change to "bob" to see the empty state
+const CURRENT_USER_ID = "alice";
 
-type RentedBook = {
-  id: number;
-  title: string;
-  author: string;
-  coverUrl: string;
-};
-
-//Mock data 
-const mockUser: User = {
-  name: "Yamini Gowda",
-  email: "yamini_gowda@home.com",
-  dateOfBirth: "2020-12-18",
-  phone: "(+91) 979839999",
-  avatarUrl: "/Avatar.png",
-};
-
-const mockRentedBooks: RentedBook[] = [
-  { id: 1, title: "Fantasy", author: "Author1", coverUrl: "/Fantasy.png" },
-  { id: 2, title: "Romance", author: "Author2", coverUrl: "/Romance.png" },
-];
-
-// Helpers
-// Fixed locale + UTC time zone
-function formatDate(isoDate: string): string {
-  return new Date(isoDate).toLocaleDateString("en-IN", {
+function formatDate(date: string | Date): string {
+  return new Date(date).toLocaleDateString("en-IN", {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -41,7 +17,6 @@ function formatDate(isoDate: string): string {
   });
 }
 
-//Components 
 function BookCard({ book }: { book: RentedBook }) {
   return (
     <li className="bg-white p-4 rounded-lg shadow hover:shadow-lg transition">
@@ -55,15 +30,35 @@ function BookCard({ book }: { book: RentedBook }) {
         />
       </div>
       <h3 className="font-bold text-gray-900">{book.title}</h3>
-      <p className="text-sm text-gray-500">{book.author}</p>
+      <p className="text-sm text-gray-500">{book.authorName}</p>
+      {book.dueDate && (
+        <p
+          className={`text-sm mt-2 ${
+            book.status === "OVERDUE" ? "text-red-600" : "text-gray-600"
+          }`}
+        >
+          {book.status === "OVERDUE" ? "Overdue since " : "Due "}
+          {formatDate(book.dueDate)}
+        </p>
+      )}
     </li>
   );
 }
 
-// Default export
-export default function ProfilePage() {
+export default async function ProfilePage() {
+  const user = await getUserById(CURRENT_USER_ID);
+
+  if (!user) {
+    return (
+      <main className="min-h-screen bg-[#fbf7e8] flex items-center justify-center">
+        <p className="text-gray-700">We couldn&apos;t find your profile yet.</p>
+      </main>
+    );
+  }
+
+  const rentedBooks = await getRentedBooksByUserId(user.id);
+
   return (
-    // The shared header/footer belong in layout.tsx, so this page only returns its content.
     <main className="min-h-screen bg-[#fbf7e8]">
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-6 text-gray-800">My Profile</h1>
@@ -74,20 +69,20 @@ export default function ProfilePage() {
           className="bg-white p-6 rounded-lg shadow-md mb-8 flex items-center gap-6"
         >
           <Image
-            src={mockUser.avatarUrl}
-            alt={`${mockUser.name}'s avatar`}
+            src={user.avatarUrl}
+            alt={`${user.fullName}'s avatar`}
             width={96}
             height={96}
             className="rounded-full object-cover border-2 border-indigo-500"
           />
           <div>
             <h2 className="text-2xl font-semibold text-gray-900">
-              {mockUser.name}
+              {user.fullName}
             </h2>
-            <p className="text-gray-600">{mockUser.email}</p>
-            <p className="text-gray-600">{mockUser.phone}</p>
+            <p className="text-gray-600">{user.email}</p>
+            <p className="text-gray-600">{user.phone}</p>
             <p className="text-gray-600">
-              Born {formatDate(mockUser.dateOfBirth)}
+              Born {formatDate(user.dateOfBirth)}
             </p>
           </div>
         </section>
@@ -96,12 +91,12 @@ export default function ProfilePage() {
         <section>
           <h2 className="text-xl font-bold mb-4 text-gray-800">Rented Books</h2>
 
-          {mockRentedBooks.length === 0 ? (
-            <p className="text-gray-700">You haven't rented any books yet.</p>
+          {rentedBooks.length === 0 ? (
+            <p className="text-gray-700">You have yet to rent any books</p>
           ) : (
             <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-              {mockRentedBooks.map((book) => (
-                <BookCard key={book.id} book={book} />
+              {rentedBooks.map((book) => (
+                <BookCard key={book.receiptId} book={book} />
               ))}
             </ul>
           )}
