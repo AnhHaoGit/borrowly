@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { LuTrash2 } from "react-icons/lu";
 import { notify } from "@/lib/toast";
-import { coverUrl } from "@/lib/books";
 import { type Book } from "@/types/book";
 
 interface Props {
@@ -21,8 +20,7 @@ const BookCard = ({ book }: Props) => {
       {/* Cover + title */}
       <div className="flex items-center gap-4 sm:w-72 sm:shrink-0">
         <Image
-          //Extra TODO: add placeholder if image doesnt exists
-          src={book.cover_id == null? '':coverUrl(book.cover_id)}
+          src={book.coverUrl.length == 0? "/file.svg":book.coverUrl}
           alt={`Cover of ${book.title}`}
           width={56}
           height={76}
@@ -44,7 +42,7 @@ const BookCard = ({ book }: Props) => {
           <dt className="text-xs font-semibold uppercase tracking-wide text-muted">
             Author
           </dt>
-          <dd className="truncate text-sm text-primary">{book.author_name}</dd>
+          <dd className="truncate text-sm text-primary">{book.authorName}</dd>
         </div>
         <div className="min-w-0">
           <dt className="text-xs font-semibold uppercase tracking-wide text-muted">
@@ -60,7 +58,7 @@ const BookCard = ({ book }: Props) => {
           </dt>
           <dd>
             <span className="inline-block rounded-full bg-accent px-3 py-0.5 text-xs font-bold text-primary">
-              {book.available_quantity>0? 'Available':'Not Available'}
+              {book.availableQuantity>0? 'Available':'Not Available'}
             </span>
           </dd>
         </div>
