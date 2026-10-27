@@ -1,7 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { FiChevronDown } from "react-icons/fi";
+import { LuChevronDown } from "react-icons/lu";
+import { notify } from "@/lib/toast";
 
 export type TicketStatus =
   | { kind: "due-today" }
@@ -17,81 +18,80 @@ export type Ticket = {
   status: TicketStatus;
 };
 
-const BORDER = "border-[#C98F93]";
-// 6 columns on md+; on mobile each row becomes a stacked card
-const GRID = "md:grid md:grid-cols-[0.9fr_1.1fr_1.4fr_1.2fr_1.1fr_1.5fr]";
-
-function statusView(status: TicketStatus) {
-  switch (status.kind) {
-    case "due-today":
-      return { label: "Due today", className: "text-[#F5B21B]" };
-    case "overdue":
-      return { label: "Over due", className: "text-[#E5322D]" };
-    case "days-left":
-      return { label: `${status.days} days left`, className: "text-[#3F7D3A]" };
-  }
+interface Props {
+  tickets: Ticket[];
 }
 
-function Cell({
-  label,
-  children,
-  className = "",
-}: {
+// 6 columns on md+; on mobile each row becomes a stacked card
+const GRID = "md:grid md:grid-cols-[0.9fr_1.1fr_1.4fr_1.2fr_1.1fr_1.5fr]";
+const HEADERS = ["Ticket ID", "Reader", "Book", "Borrow date", "Due date"];
+
+const statusView = (status: TicketStatus) => {
+  switch (status.kind) {
+    case "due-today":
+      return { label: "Due today", className: "bg-amber-100 text-amber-700" };
+    case "overdue":
+      return { label: "Overdue", className: "bg-red-100 text-red-700" };
+    case "days-left":
+      return {
+        label: `${status.days} days left`,
+        className: "bg-green-100 text-green-800",
+      };
+  }
+};
+
+interface CellProps {
   label: string;
   children: ReactNode;
   className?: string;
-}) {
-  return (
-    <div
-      role="cell"
-      className={`flex items-center justify-between gap-4 border-b border-[#EBD3CF] px-4 py-2.5 last:border-b-0 md:justify-center md:border-b-0 md:border-l md:px-3 md:py-6 md:text-center md:first:border-l-0 md:border-[#C98F93] ${className}`}
-    >
-      <span className="text-[11px] text-[#C98F93] md:hidden">{label}</span>
-      <span className="min-w-0 break-words text-right md:text-center">{children}</span>
-    </div>
-  );
 }
 
-export default function TicketsTable({ tickets }: { tickets: Ticket[] }) {
+const Cell = ({ label, children, className = "" }: CellProps) => (
+  <div
+    role="cell"
+    className={`flex items-center justify-between gap-4 border-b border-accent-deep/20 px-4 py-2.5 last:border-b-0 md:justify-center md:border-b-0 md:border-l md:border-accent-deep/40 md:px-3 md:py-6 md:text-center md:first:border-l-0 ${className}`}
+  >
+    <span className="text-xs text-muted md:hidden">{label}</span>
+    <span className="min-w-0 break-words text-right md:text-center">
+      {children}
+    </span>
+  </div>
+);
+
+const TicketsTable = ({ tickets }: Props) => {
   const handleFilterStatus = () => {
     // TODO: open a dropdown to filter/sort by time status (due today, overdue, ...)
-    console.log("filter by status");
+    notify.info("Status filter isn't connected yet");
   };
 
-  const headers = ["Ticket ID", "Reader", "Book", "Borrow date", "Due date"];
-
   return (
-    <div
-      role="table"
-      aria-label="Borrow tickets"
-      className="font-[family-name:var(--font-heading)] text-[#3A1420]"
-    >
-      {/* Header row (desktop only) */}
+    <div role="table" aria-label="Borrow tickets" className="text-primary">
+      {/* Header row (md+) */}
       <div
         role="row"
-        className={`hidden rounded-lg border bg-[#FBF6E7] text-xs uppercase tracking-wide ${BORDER} ${GRID}`}
+        className={`hidden overflow-hidden rounded-2xl border-2 border-accent-deep bg-accent text-sm font-bold ${GRID}`}
       >
-        {headers.map((h) => (
+        {HEADERS.map((h) => (
           <div
             key={h}
             role="columnheader"
-            className={`px-3 py-2 text-center border-l first:border-l-0 ${BORDER}`}
+            className="border-l border-accent-deep/40 px-3 py-3 text-center first:border-l-0"
           >
             {h}
           </div>
         ))}
         <div
           role="columnheader"
-          className={`relative border-l px-3 py-2 text-center ${BORDER}`}
+          className="relative border-l border-accent-deep/40 px-3 py-3 text-center"
         >
           Time status
           <button
             type="button"
             onClick={handleFilterStatus}
             aria-label="Filter by time status"
-            className="absolute right-2 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-full bg-[#F5CFC6] text-[#6B1D2E] hover:bg-[#EEB9AE]"
+            className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-full bg-surface text-primary transition hover:bg-surface/70"
           >
-            <FiChevronDown size={12} />
+            <LuChevronDown className="size-4" />
           </button>
         </div>
       </div>
@@ -101,9 +101,10 @@ export default function TicketsTable({ tickets }: { tickets: Ticket[] }) {
         <button
           type="button"
           onClick={handleFilterStatus}
-          className="flex items-center gap-1 rounded-full bg-[#F5CFC6] px-3 py-1 text-xs text-[#6B1D2E]"
+          className="inline-flex items-center gap-1.5 rounded-full border-2 border-accent-deep bg-accent px-4 py-1.5 text-sm font-bold text-primary transition hover:bg-accent-deep"
         >
-          Time status <FiChevronDown size={12} />
+          Time status
+          <LuChevronDown className="size-4" />
         </button>
       </div>
 
@@ -114,22 +115,29 @@ export default function TicketsTable({ tickets }: { tickets: Ticket[] }) {
             <div
               key={t.id}
               role="row"
-              className={`flex flex-col overflow-hidden rounded-lg border shadow-md ${BORDER} ${GRID}`}
+              className={`flex flex-col overflow-hidden rounded-2xl border border-accent-deep/40 bg-surface shadow-soft ${GRID}`}
             >
-              <Cell label="Ticket ID" className="text-base">{t.id}</Cell>
-              <Cell label="Reader" className="text-xs font-bold text-[#6B1D2E]">
+              <Cell label="Ticket ID" className="text-base font-bold">
+                {t.id}
+              </Cell>
+              <Cell label="Reader" className="text-sm font-bold">
                 {t.reader}
               </Cell>
-              <Cell label="Book" className="text-[11px] uppercase leading-snug tracking-wide">
+              <Cell label="Book" className="text-sm leading-snug">
                 {t.book}
               </Cell>
-              <Cell label="Borrow date" className="text-[11px]">{t.borrowDate}</Cell>
-              <Cell label="Due date" className="text-[11px]">{t.dueDate}</Cell>
-              <Cell
-                label="Time status"
-                className={`text-xs font-bold uppercase tracking-wide ${status.className}`}
-              >
-                {status.label}
+              <Cell label="Borrow date" className="text-sm">
+                {t.borrowDate}
+              </Cell>
+              <Cell label="Due date" className="text-sm">
+                {t.dueDate}
+              </Cell>
+              <Cell label="Time status">
+                <span
+                  className={`inline-block rounded-full px-3 py-1 text-xs font-bold ${status.className}`}
+                >
+                  {status.label}
+                </span>
               </Cell>
             </div>
           );
@@ -137,4 +145,6 @@ export default function TicketsTable({ tickets }: { tickets: Ticket[] }) {
       </div>
     </div>
   );
-}
+};
+
+export default TicketsTable;
