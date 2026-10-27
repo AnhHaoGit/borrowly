@@ -3,20 +3,7 @@
 import type { ReactNode } from "react";
 import { LuChevronDown } from "react-icons/lu";
 import { notify } from "@/lib/toast";
-
-export type TicketStatus =
-  | { kind: "due-today" }
-  | { kind: "overdue" }
-  | { kind: "days-left"; days: number };
-
-export type Ticket = {
-  id: string;
-  reader: string;
-  book: string;
-  borrowDate: string;
-  dueDate: string;
-  status: TicketStatus;
-};
+import { type Ticket, type TicketWithDetails, type BorrowStatus } from "@/types/ticket";
 
 interface Props {
   tickets: Ticket[];
@@ -26,17 +13,21 @@ interface Props {
 const GRID = "md:grid md:grid-cols-[0.9fr_1.1fr_1.4fr_1.2fr_1.1fr_1.5fr]";
 const HEADERS = ["Ticket ID", "Reader", "Book", "Borrow date", "Due date"];
 
-const statusView = (status: TicketStatus) => {
-  switch (status.kind) {
-    case "due-today":
-      return { label: "Due today", className: "bg-amber-100 text-amber-700" };
-    case "overdue":
+const statusView = (status: BorrowStatus) => {
+  switch (status) {
+    case "PENDING":
+      return { label: "Pending", className: "bg-amber-100 text-amber-700" };
+    case "BORROWED":
+      return { label: "Borrowed", className: "bg-sky-100 text-sky-700" };
+    case "RETURNED":
+      return { label: "Returned", className: "bg-green-100 text-green-800" };
+    case "OVERDUE":
       return { label: "Overdue", className: "bg-red-100 text-red-700" };
-    case "days-left":
-      return {
-        label: `${status.days} days left`,
-        className: "bg-green-100 text-green-800",
-      };
+    case "EXPIRED":
+      return { label: "Expired", className: "bg-orange-100 text-orange-700" };
+    default:
+      // Safety net for a value the app doesn't know about
+      return { label: "Unknown", className: "bg-gray-200 text-gray-700" };
   }
 };
 
@@ -84,7 +75,7 @@ const TicketsTable = ({ tickets }: Props) => {
           role="columnheader"
           className="relative border-l border-accent-deep/40 px-3 py-3 text-center"
         >
-          Time status
+          Status
           <button
             type="button"
             onClick={handleFilterStatus}
@@ -121,13 +112,13 @@ const TicketsTable = ({ tickets }: Props) => {
                 {t.id}
               </Cell>
               <Cell label="Reader" className="text-sm font-bold">
-                {t.reader}
+                {/*t.reader*/"WIP"}
               </Cell>
               <Cell label="Book" className="text-sm leading-snug">
-                {t.book}
+                {/*t.book*/"WIP"}
               </Cell>
               <Cell label="Borrow date" className="text-sm">
-                {t.borrowDate}
+                {/*t.borrowDate*/"WIP"}
               </Cell>
               <Cell label="Due date" className="text-sm">
                 {t.dueDate}

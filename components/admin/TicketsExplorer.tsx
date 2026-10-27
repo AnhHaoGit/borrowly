@@ -3,22 +3,25 @@
 import AdminSearchBar from "@/components/admin/AdminSearchBar";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import Pagination from "@/components/books/Pagination";
-import TicketsTable, { type Ticket } from "@/components/admin/TicketsTable";
+import TicketsTable from "@/components/admin/TicketsTable";
+import { type Ticket } from "@/types/ticket";
 
 // TODO: replace with real data (fetch from your API / database)
 const base = {
-  id: "LBR123",
-  reader: "Thunmanhandiya",
-  book: "101 cách cua đổ đại lão hàng xóm",
-  borrowDate: "30/02/2027",
-  dueDate: "07/03/2027",
+  id: "ticketId",
+  readerId: "readerId",
+  bookId: "bookId",
+  borrowDate: null,
+  dueDate: null,
+  returnDate: null,
+  createdAt: new Date()
 };
 const tickets: Ticket[] = [
-  { ...base, id: "LBR123", status: { kind: "due-today" } },
-  { ...base, id: "LBR124", status: { kind: "overdue" } },
-  { ...base, id: "LBR125", status: { kind: "due-today" } },
-  { ...base, id: "LBR126", status: { kind: "days-left", days: 3 } },
-  { ...base, id: "LBR127", status: { kind: "days-left", days: 3 } },
+  { ...base, id: "LBR123", status: "BORROWED" },
+  { ...base, id: "LBR124", status: "PENDING" },
+  { ...base, id: "LBR125", status: "RETURNED" },
+  { ...base, id: "LBR126", status: "OVERDUE" },
+  { ...base, id: "LBR127", status: "EXPIRED" },
 ];
 
 //TODO: add actual logic

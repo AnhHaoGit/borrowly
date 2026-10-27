@@ -3,17 +3,17 @@
 import AdminSearchBar from "@/components/admin/AdminSearchBar";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import Pagination from "@/components/books/Pagination";
-import ReaderCard, { type Reader } from "@/components/admin/ReaderCard";
+import ReaderCard from "@/components/admin/ReaderCard";
+import { type Reader } from "@/types/reader";
 
 // TODO: replace with real data (fetch from your API / database)
 const readers: Reader[] = Array.from({ length: 5 }, (_, i) => ({
   id: String(i + 1),
-  name: "Yamini Gowda",
+  fullName: "Yamini Gowda",
   email: "yamini_gowda@home.com",
-  dateOfBirth: "Dec 18, 2020",
-  phone: "(+91) 979839999",
-  address: "Kisan Warle Est, Nr Dahanukar Wadi Bunder Pakhadi Rd, Kandivali, Alwar",
-  avatarUrl: `/avatars/avatar-${i + 1}.png`, // put images in /public/avatars
+  role: "USER",
+  lastActivityDate: null,
+  createdAt: new Date()
 }));
 
 //TODO: add actual logic

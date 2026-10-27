@@ -11,7 +11,7 @@ export type BorrowStatus =
 // Mirrors the `receipts` table
 export interface Ticket {
   id: string;
-  userId: string;
+  readerId: string;
   bookId: string;
   status: BorrowStatus;
   borrowDate: Date | null; // null until the book is actually picked up
@@ -25,9 +25,3 @@ export interface TicketWithDetails extends Ticket {
   reader: Pick<Reader, "id" | "fullName" | "email">;
   book: Pick<Book, "id" | "title" | "coverUrl">;
 }
-
-// Derived from `dueDate` (not stored in the DB); drives the colored pill in the table
-export type TicketTimeStatus =
-  | { kind: "due-today" }
-  | { kind: "overdue" }
-  | { kind: "days-left"; days: number };
