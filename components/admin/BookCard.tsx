@@ -1,63 +1,81 @@
 "use client";
 
 import Image from "next/image";
+import { LuTrash2 } from "react-icons/lu";
+import { notify } from "@/lib/toast";
+import { coverUrl } from "@/lib/books";
+import { type Book } from "@/types/book";
 
-export type Book = {
-  id: string;
-  title: string;
-  subtitle?: string;
-  author: string;
-  category: string;
-  status: "Available" | "Borrowed" | string;
-  coverUrl: string;
-};
+interface Props {
+  book: Book;
+}
 
-export default function BookCard({ book }: { book: Book }) {
+const BookCard = ({ book }: Props) => {
   const handleDelete = () => {
     // TODO: confirm, then call your delete API for `book.id` and refresh the list
-    console.log("delete book", book.id);
+    notify.info("Delete isn't connected yet", { description: book.title });
   };
 
-  const details = [
-    { label: "Author", value: book.author },
-    { label: "Category", value: book.category },
-    { label: "Status", value: book.status },
-  ];
-
   return (
-    <article className="flex flex-col gap-4 rounded-xl border border-[#D9A9A3] p-4 sm:flex-row sm:items-center sm:gap-6 sm:px-5">
+    <article className="flex flex-col gap-4 rounded-2xl border border-accent-deep/40 bg-surface p-4 shadow-soft sm:flex-row sm:items-center sm:gap-6 sm:px-5">
       {/* Cover + title */}
       <div className="flex items-center gap-4 sm:w-72 sm:shrink-0">
         <Image
-          src={book.coverUrl}
+          //Extra TODO: add placeholder if image doesnt exists
+          src={book.cover_id == null? '':coverUrl(book.cover_id)}
           alt={`Cover of ${book.title}`}
-          width={52}
-          height={70}
-          className="h-[70px] w-[52px] shrink-0 object-cover shadow-md"
+          width={56}
+          height={76}
+          className="h-[76px] w-14 shrink-0 rounded-md object-cover shadow-soft"
         />
-        <div className="min-w-0 font-[family-name:var(--font-heading)] font-bold leading-tight text-[#6B1D2E]">
-          <h2 className="text-base">{book.title}</h2>
-          {book.subtitle && <p className="text-sm">{book.subtitle}</p>}
+        <div className="min-w-0">
+          <h2 className="text-lg font-bold leading-tight text-primary">
+            {book.title}
+          </h2>
+          {book.summary && (
+            <p className="text-sm text-muted">{book.summary}</p>
+          )}
         </div>
       </div>
 
       {/* Details */}
-      <dl className="grid flex-1 grid-cols-2 content-center gap-x-6 gap-y-1 text-[11px]">
-        {details.map(({ label, value }) => (
-          <div key={label}>
-            <dt className="font-semibold text-[#E0414F]">{label}</dt>
-            <dd className="text-[#222]">{value}</dd>
-          </div>
-        ))}
+      <dl className="grid flex-1 grid-cols-2 content-center gap-x-6 gap-y-3">
+        <div className="min-w-0">
+          <dt className="text-xs font-semibold uppercase tracking-wide text-muted">
+            Author
+          </dt>
+          <dd className="truncate text-sm text-primary">{book.author_name}</dd>
+        </div>
+        <div className="min-w-0">
+          <dt className="text-xs font-semibold uppercase tracking-wide text-muted">
+            Category
+          </dt>
+          <dd className="truncate text-sm capitalize text-primary">
+            {book.genre}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs font-semibold uppercase tracking-wide text-muted">
+            Status
+          </dt>
+          <dd>
+            <span className="inline-block rounded-full bg-accent px-3 py-0.5 text-xs font-bold text-primary">
+              {book.available_quantity>0? 'Available':'Not Available'}
+            </span>
+          </dd>
+        </div>
       </dl>
 
       <button
         type="button"
         onClick={handleDelete}
-        className="self-end font-[family-name:var(--font-heading)] text-base font-bold text-[#6B1D2E] hover:underline sm:self-auto sm:px-2"
+        className="inline-flex items-center justify-center gap-1.5 self-end rounded-full border-2 border-accent-deep bg-accent px-4 py-2 text-sm font-bold text-primary transition hover:bg-accent-deep sm:self-auto"
       >
+        <LuTrash2 className="size-4" />
         Delete
       </button>
     </article>
   );
-}
+};
+
+export default BookCard;

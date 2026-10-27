@@ -23,30 +23,33 @@ const goToPage = (p: number) => {
 };
 
 const AdminBooksExplorer = () => {
-    return (
-      <div className="flex flex-1 flex-col md:flex-row">
+  return (
+    <div className="flex min-h-screen flex-col bg-background text-primary">
+
+      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col md:flex-row">
         <AdminSidebar />
 
-        <main className="min-w-0 flex-1 px-5 py-6 sm:px-8 md:px-10 md:py-8">
-          <div className="mx-auto max-w-5xl">
-            <BookSearchBar />
+        <main className="min-w-0 flex-1 space-y-6 px-4 pb-20 pt-8 sm:px-6">
+          <h1 className="sr-only">Manage books</h1>
 
-            <section aria-label="Books" className="mt-8 flex flex-col gap-4 sm:mt-12">
-              {books.map((book) => (
-                <BookCard key={book.id} book={book} />
-              ))}
-            </section>
+          <BookSearchBar />
 
-            <div className="mt-8">
-              <Pagination
-                current={currentPage}
-                total={totalPage}
-                onChange={goToPage}
-              />
-            </div>
+          <section aria-label="Books" className="flex flex-col gap-4">
+            {books.map((book) => (
+              <BookCard key={book.id} book={book} />
+            ))}
+          </section>
+
+          <div className="mt-8">
+            <Pagination
+              current={currentPage}
+              total={totalPage}
+              onChange={goToPage}
+            />
           </div>
         </main>
       </div>
+    </div>
   );
 };
 
