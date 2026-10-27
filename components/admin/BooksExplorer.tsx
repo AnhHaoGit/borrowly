@@ -1,19 +1,34 @@
 "use client"
 
 import AdminSidebar from "@/components/admin/AdminSidebar";
-import BookCard, { type Book } from "@/components/admin/BookCard";
+import BookCard from "@/components/admin/BookCard";
 import BookSearchBar from "@/components/admin/BookSearchBar";
 import Pagination from "@/components/books/Pagination";
+import { type Book } from "@/types/book";
 
-const books: Book[] = Array.from({ length: 5 }, (_, i) => ({
-  id: String(i + 1),
-  title: "Thunmanhandiya",
-  subtitle: "Mahagamasekara",
-  author: "Yamini Gowda",
-  category: "fantasy",
-  status: "Available",
-  coverUrl: "/file.svg"
-}));
+//Mock data
+const books: Book[] = [
+  {
+    id: "404",
+    title: "Title",
+    authorName: "AuthorName",
+    authorImageUrl: null,
+    genre: "genre",
+    publishYear: 3030,
+    coverUrl: "",
+    summary: "Summary",
+    description: "Description",
+    availableQuantity: 404,
+    rating: 404,
+    borrowCount: 404,
+    language: "Language",
+    subjects: ["Subject1", "Subject2"],
+    subjectPlaces: ["SubjectPlaces1", "SubjectPlaces2"],
+    subjectTimes: ["SubjectTimes1", "SubjectTimes2"],
+    publishers: ["Publishers1", "Publishers2"],
+    createdAt: new Date()
+  }
+];
 
 //TODO: put in actual logic
 const currentPage = 1;
