@@ -48,6 +48,7 @@ const BooksExplorer = ({ genres }: Props) => {
   const resultsRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { status } = useSession();
+  
 
   useEffect(() => {
     if (status === "unauthenticated") {

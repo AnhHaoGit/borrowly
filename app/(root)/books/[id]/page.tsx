@@ -19,8 +19,8 @@ async function BookDetailLoader({
 
   if (!book) {
     return (
-      <div className="p-8 text-center text-[#62202f]">
-        Không tìm thấy thông tin cuốn sách này!
+      <div className="p-8 text-center text-primary">
+        No book found!
       </div>
     );
   }
@@ -38,8 +38,8 @@ export default function BookDetailPage({
     <main>
       <Suspense
         fallback={
-          <div className="p-12 text-center text-[#62202f]">
-            Đang tải dữ liệu sách...
+          <div className="p-12 text-center text-primary">
+            Loading...
           </div>
         }
       >

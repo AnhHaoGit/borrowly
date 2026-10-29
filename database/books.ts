@@ -16,18 +16,6 @@ export const GENRES: string[] = [
   "Humor",
 ];
 
-export type Book = {
-  id: number;
-  title: string;
-  author_name: string;
-  genre: string;
-  publish_year: number;
-  cover_id: number;
-  summary: string;
-  description: string;
-  available_quantity: number;
-};
-
 export const books = [
   {
     id: "001d68a6-ef6c-4a10-83f6-cc91dac542df",

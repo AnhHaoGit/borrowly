@@ -16,7 +16,7 @@ export interface Book {
   subjectPlaces: string[];
   subjectTimes: string[];
   publishers: string[];
-  createdAt: Date;
+  createdAt: string;
 }
 
 export type Status = "all" | "available" | "unavailable";
