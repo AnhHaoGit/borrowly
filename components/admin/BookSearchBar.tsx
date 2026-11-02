@@ -1,10 +1,12 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { LuPlus, LuSearch } from "react-icons/lu";
 import { notify } from "@/lib/toast";
 
 const BookSearchBar = () => {
+  const router = useRouter();
   const [query, setQuery] = useState("");
 
   const handleSearch = (e: React.FormEvent) => {
@@ -14,8 +16,7 @@ const BookSearchBar = () => {
   };
 
   const handleAddBook = () => {
-    // TODO: open the "Add book" modal or navigate to /admin/books/new
-    notify.info("Add book isn't connected yet");
+    router.push("/admin/books/add");
   };
 
   return (
