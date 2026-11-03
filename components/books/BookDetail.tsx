@@ -54,7 +54,7 @@ export default function BookDetail({ book }: Props) {
         </button>
       </div>
       {/* MAIN CONTAINER */}
-      <div className="max-w-5xl mx-auto px-4 md:px-8 w-full flex flex-col gap-8">
+      <div className="max-w-[1400px] mx-auto px-4 md:px-8 w-full flex flex-col gap-8">
         {/* 1. CARD CHÍNH - THÔNG TIN SÁCH */}
         <section className="border-2 border-[#F57F7F]/60 rounded-3xl p-6 md:p-8 bg-background/50 relative shadow-sm">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
@@ -128,6 +128,199 @@ export default function BookDetail({ book }: Props) {
                 </p>
               </div>
             </div>
+            {/* CỘT PHẢI: Phần đầu (Tiêu đề, Tác giả, Tag) */}
+            <div className="md:col-span-7 flex flex-col gap-8">
+              
+              {/* Header: Thanh ngang liền mạch và ngôi sao ✦ */}
+              <div className="space-y-4 pt-2">
+                <div className="relative w-full flex items-center">
+                  {/* Thanh ngang kéo dài liên tục */}
+                  <div className="absolute inset-x-0 h-[1px] bg-[#EEB3A3]"></div>
+                  {/* Ngôi sao nằm ở phía bên phải */}
+                  <span className="ml-auto relative z-10 bg-[#fbf7e8] pl-2 text-sm text-[#EEB3A3]">✦</span>
+                </div>
+
+                {/* Tên sách từ Database */}
+                <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-[#62202f]">
+                  {book.title}
+                </h1>
+
+                {/* Tác giả & Ảnh đại diện tác giả từ Database */}
+                <div className="flex items-center gap-3 pt-1">
+                  <div className="relative w-9 h-9 rounded-full overflow-hidden bg-[#f5d0c6] border border-[#EEB3A3] flex items-center justify-center text-xs font-bold text-[#62202f]">
+                    {book.authorImageUrl ? (
+                      <Image
+                        src={book.authorImageUrl}
+                        alt={book.authorName || "Author"}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <span>{book.authorName ? book.authorName.charAt(0) : "A"}</span>
+                    )}
+                  </div>
+                  <span className="text-lg font-medium text-[#62202f]">
+                    by <span className="font-semibold">{book.authorName}</span>
+                  </span>
+                </div>
+
+                {/* Các Badges Tag lấy từ Database (Genre & Publish Year) */}
+                <div className="flex flex-wrap gap-3 pt-2">
+                  {book.genre && (
+                    <div className="flex items-center gap-2 border border-[#62202f] bg-[#fbf7e8] px-3 py-1 text-xs uppercase tracking-wider text-[#62202f]">
+                      <FaBookOpen className="text-xs" />
+                      <span>{book.genre}</span>
+                    </div>
+                  )}
+                  {book.publishYear && (
+                    <div className="flex items-center gap-2 border border-[#62202f] bg-[#fbf7e8] px-3 py-1 text-xs uppercase tracking-wider text-[#62202f]">
+                      <FaCalendarAlt className="text-xs" />
+                      <span>Edition: {book.publishYear}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <hr className="border-[#EEB3A3]" />
+              {/* SECTION: BOOK SUMMARY */}
+            <div className="space-y-3 pt-4">
+              <h3 className="flex items-center gap-2 text-lg font-bold uppercase tracking-wider text-[#62202f]">
+                <FaBookOpen className="text-sm text-[#62202f]" />
+                <span>Book Summary</span>
+              </h3>
+              <p className="text-base leading-relaxed text-[#62202f]/90">
+                {book.description || book.summary || "No summary available for this book."}
+              </p>
+            </div>
+            <hr className="border-[#EEB3A3] my-6" />
+            {/* SECTION: PUBLICATION INFORMATION */}
+          <section className="space-y-3 pt-2">
+            <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-[#62202f]">
+              <span className="text-xs text-[#F57F7F]">✦</span>
+              <h3>Publication Information</h3>
+              <div className="h-[1px] bg-[#EEB3A3] flex-1 ml-2"></div>
+            </div>
+
+            {/* Khung chứa chi tiết kỹ thuật có viền góc nghệ thuật */}
+            <div className="border border-[#EEB3A3] bg-[#fbf7e8] p-6 space-y-4 relative text-xs md:text-sm">
+              <div className="absolute top-0 left-0 w-2.5 h-2.5 border-t-2 border-l-2 border-[#62202f]"></div>
+              <div className="absolute bottom-0 right-0 w-2.5 h-2.5 border-b-2 border-r-2 border-[#62202f]"></div>
+
+              {/* Publisher */}
+              <div className="flex items-start justify-between border-b border-[#EEB3A3]/50 pb-3">
+                <div className="flex items-center gap-2 font-semibold uppercase tracking-wider text-[#62202f]">
+                  <FaBuilding />
+                  <span>Publisher</span>
+                </div>
+
+                <div className="text-right flex flex-col items-end gap-1">
+                  {(() => {
+                    const rawPublisher = (book?.publishers ?? book?.publishers ?? "[PUBLISHER]") as string | string[];
+                    let publishersList: string[] = [];
+                    
+                    if (Array.isArray(rawPublisher)) {
+                      publishersList = rawPublisher.map(String);
+                    } else if (typeof rawPublisher === "string") {
+                      publishersList = rawPublisher.split(/,|\n/).map(p => p.trim()).filter(Boolean);
+                    } else {
+                      publishersList = [String(rawPublisher)];
+                    }
+
+                    const visiblePublishers = showAllPublishers ? publishersList : publishersList.slice(0, 2);
+                    const hasMore = publishersList.length > 2;
+
+                    return (
+                      <>
+                        <div className="flex flex-col items-end gap-1 text-[#62202f]">
+                          {visiblePublishers.map((pub, idx) => (
+                            <span key={idx} className="font-semibold block text-right leading-snug">
+                              {pub}
+                            </span>
+                          ))}
+                        </div>
+
+                        {hasMore && (
+                          <button
+                            type="button"
+                            onClick={() => setShowAllPublishers(!showAllPublishers)}
+                            className="text-xs text-[#F57F7F] font-bold hover:underline mt-1 cursor-pointer"
+                          >
+                            {showAllPublishers ? "− Show less" : `+ ${publishersList.length - 2} more`}
+                          </button>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Publication Year */}
+              <div className="flex justify-between items-center border-b border-[#EEB3A3]/50 pb-3">
+                <div className="flex items-center gap-2 font-semibold uppercase tracking-wider text-[#62202f]">
+                  <FaCalendarAlt />
+                  <span>Publication Year</span>
+                </div>
+                <span>{book.publishYear || "N/A"}</span>
+              </div>
+
+              {/* Language */}
+              <div className="flex justify-between items-center border-b border-[#EEB3A3]/50 pb-3">
+                <div className="flex items-center gap-2 font-semibold uppercase tracking-wider text-[#62202f]">
+                  <FaGlobe />
+                  <span>Language</span>
+                </div>
+                <span className="uppercase">{book.language || "eng"}</span>
+              </div>
+
+              {/* Category */}
+              <div className="flex justify-between items-center border-b border-[#EEB3A3]/50 pb-3">
+                <div className="flex items-center gap-2 font-semibold uppercase tracking-wider text-[#62202f]">
+                  <FaBookmark />
+                  <span>Category</span>
+                </div>
+                <span>{book.genre || "General"}</span>
+              </div>
+
+              {/* Subjects */}
+              {book.subjects && book.subjects.length > 0 && (
+                <div className="border-b border-[#EEB3A3]/50 pb-3 space-y-1">
+                  <div className="font-semibold uppercase tracking-wider text-[#62202f]">
+                    Subjects
+                  </div>
+                  <p className="italic text-[#62202f]/80">
+                    {book.subjects.join(" · ")}
+                  </p>
+                </div>
+              )}
+
+              {/* Subject Places */}
+              {book.subjectPlaces && book.subjectPlaces.length > 0 && (
+                <div className="border-b border-[#EEB3A3]/50 pb-3 space-y-1">
+                  <div className="font-semibold uppercase tracking-wider text-[#62202f]">
+                    Subject Places
+                  </div>
+                  <p className="italic text-[#62202f]/80">
+                    {book.subjectPlaces.join(" · ")}
+                  </p>
+                </div>
+              )}
+
+              {/* Subject Times */}
+              {book.subjectTimes && book.subjectTimes.length > 0 && (
+                <div className="space-y-1">
+                  <div className="font-semibold uppercase tracking-wider text-[#62202f]">
+                    Subject Times
+                  </div>
+                  <p className="italic text-[#62202f]/80">
+                    {book.subjectTimes.join(" · ")}
+                  </p>
+                </div>
+              )}
+            </div>
+          </section>
+            
+            </div>
+          
+
         </div>
       </section>
     </div>
