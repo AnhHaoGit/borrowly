@@ -50,14 +50,7 @@ const BooksExplorer = ({ genres }: Props) => {
   const { status } = useSession();
   
 
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      notify.info("Please sign in to browse books.", {
-        id: "auth-required",
-      });
-      router.replace("/sign-in");
-    }
-  }, [status, router]);
+  
 
   const fetchBooks = useCallback(
     async (signal: AbortSignal) => {
