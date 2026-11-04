@@ -7,8 +7,10 @@ import {
   date,
   pgEnum,
   real,
+  smallint,
   timestamp,
   index,
+  uniqueIndex,
   check,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
@@ -47,7 +49,10 @@ export const books = pgTable(
     summary: text("summary").notNull(),
     description: text("description").notNull(),
     availableQuantity: integer("available_quantity").notNull().default(0),
-    rating: real("rating"), // null = chưa có đánh giá
+    // Trung bình cộng rating của bảng reviews (0..5), null = chưa có đánh giá.
+    // Đây là giá trị cache sẵn để trang danh sách không phải aggregate mỗi lần đọc.
+    rating: real("rating"),
+    ratingCount: integer("rating_count").notNull().default(0),
     borrowCount: integer("borrow_count").notNull().default(0),
     language: text("language").notNull(),
     subjects: text("subjects")
@@ -82,6 +87,7 @@ export const books = pgTable(
       "books_rating_range",
       sql`${t.rating} IS NULL OR (${t.rating} >= 0 AND ${t.rating} <= 5)`,
     ),
+    check("books_rating_count_non_negative", sql`${t.ratingCount} >= 0`),
   ],
 );
 
@@ -107,5 +113,40 @@ export const receipts = pgTable(
     index("receipts_user_idx").on(t.userId),
     index("receipts_book_idx").on(t.bookId),
     index("receipts_status_idx").on(t.status),
+  ],
+);
+
+// Mỗi người dùng chỉ có đúng một đánh giá cho mỗi cuốn sách: "thêm" và "sửa"
+// là cùng một câu upsert, và trung bình cộng luôn tính trên người thật.
+// rating lưu bằng nửa sao (1 = 0.5★, 10 = 5★) dưới dạng smallint để phép
+// cộng/trung bình không có sai số dấu phẩy động.
+export const reviews = pgTable(
+  "reviews",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    bookId: uuid("book_id")
+      .notNull()
+      .references(() => books.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    rating: smallint("rating").notNull(),
+    comment: text("comment"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("reviews_book_user_unique").on(t.bookId, t.userId),
+    index("reviews_book_updated_idx").on(t.bookId, t.updatedAt),
+    index("reviews_user_idx").on(t.userId),
+    check("reviews_rating_range", sql`${t.rating} >= 1 AND ${t.rating} <= 10`),
+    check(
+      "reviews_comment_length",
+      sql`${t.comment} IS NULL OR char_length(${t.comment}) <= 1000`,
+    ),
   ],
 );

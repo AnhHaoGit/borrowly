@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Suspense } from "react";
 
 const LINKS = [
   { href: "/admin/books", label: "Books" },
@@ -9,11 +10,12 @@ const LINKS = [
   { href: "/admin/tickets", label: "Tickets" },
 ];
 
-const AdminSidebar = () => {
-  const pathname = usePathname();
-
+// `usePathname()` đọc URL chỉ có ở runtime nên phải nằm trong Suspense,
+// nếu không Next.js sẽ chặn prerender.
+// `pathname === null` là trạng thái fallback: không link nào được đánh dấu active.
+const AdminSidebarFrame = ({ pathname }: { pathname: string | null }) => {
   const isActive = (href: string) =>
-    pathname === href || pathname.startsWith(`${href}/`);
+    pathname === href || (pathname?.startsWith(`${href}/`) ?? false);
 
   return (
     <div className="px-4 pt-8 sm:px-6 md:w-60 md:shrink-0 md:pr-0">
@@ -40,5 +42,17 @@ const AdminSidebar = () => {
     </div>
   );
 };
+
+const AdminSidebarWithPathname = () => {
+  const pathname = usePathname();
+
+  return <AdminSidebarFrame pathname={pathname} />;
+};
+
+const AdminSidebar = () => (
+  <Suspense fallback={<AdminSidebarFrame pathname={null} />}>
+    <AdminSidebarWithPathname />
+  </Suspense>
+);
 
 export default AdminSidebar;

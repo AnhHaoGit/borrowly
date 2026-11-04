@@ -10,13 +10,14 @@ export interface Book {
   description: string;
   availableQuantity: number;
   rating: number | null;
+  ratingCount: number;
   borrowCount: number;
   language: string;
   subjects: string[];
   subjectPlaces: string[];
   subjectTimes: string[];
   publishers: string[];
-  createdAt: string;
+  createdAt: string | Date;
 }
 
 export type Status = "all" | "available" | "unavailable";

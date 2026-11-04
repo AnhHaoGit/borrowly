@@ -9,7 +9,6 @@ import { PageLoader } from "@/components/ui/Loader";
 import { notify } from "@/lib/toast";
 import type { Book, Filters } from "../../types/book";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 
 const PAGE_SIZE = 12;
 
@@ -46,11 +45,7 @@ const BooksExplorer = ({ genres }: Props) => {
   const [error, setError] = useState<string | null>(null);
 
   const resultsRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
   const { status } = useSession();
-  
-
-  
 
   const fetchBooks = useCallback(
     async (signal: AbortSignal) => {

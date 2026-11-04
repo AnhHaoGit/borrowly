@@ -1,354 +1,436 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useState, type ReactNode } from "react";
 import type { Book } from "@/types/book";
-import { Bona_Nova } from "next/font/google";
+import { notify } from "@/lib/toast";
+import BookCard from "./BookCard";
+import BookReviews from "./BookReviews";
+import { StarRating } from "@/components/ui/StarRating";
+import { getLanguageName } from "@/lib/languages";
+import type { ReviewState } from "@/types/review";
 import {
-  FaArrowLeft,
-  FaBookOpen,
-  FaBook,
-  FaShoppingCart,
-  FaHeart,
-  FaRegHeart,
-  FaBookmark,
-  FaRegBookmark,
-  FaBuilding,
-  FaCalendarAlt,
-  FaGlobe,
-  FaFileAlt,
-  FaBarcode,
-  FaHashtag,
-  FaMapMarkerAlt,
-  FaLayerGroup,
-} from "react-icons/fa";
+  LuArrowLeft,
+  LuBookOpen,
+  LuBookmarkPlus,
+  LuBuilding2,
+  LuCalendarDays,
+  LuCheck,
+  LuClock,
+  LuGlobe,
+  LuHash,
+  LuMapPin,
+  LuStar,
+  LuTag,
+  LuUsers,
+} from "react-icons/lu";
 
 interface Props {
   book: Book;
+  similarBooks: Book[];
+  reviewState: ReviewState;
+  viewerId: string | null;
 }
 
-const bonaNova = Bona_Nova({
-  subsets: ["latin"],
-  weight: ["400", "700"],
-});
-export default function BookDetail({ book }: Props) {
-  const router = useRouter();
-  const outOfStock = book.availableQuantity <= 0;
-  const [isLiked, setIsLiked] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [showAllPublishers, setShowAllPublishers] = useState(false);
-  const [isCheckedOut, setIsCheckedOut] = useState(false)
-  const [showAllSubjects, setShowAllSubjects] = useState(false);
+const DESCRIPTION_PREVIEW_CHARS = 480;
+const PUBLISHER_PREVIEW = 3;
+const CHIP_PREVIEW = 8;
+
+const formatDate = (value: Date | string) => {
+  const date = typeof value === "string" ? new Date(value) : value;
+
+  if (Number.isNaN(date.getTime())) return "—";
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date);
+};
+
+const Badge = ({ icon, children }: { icon: ReactNode; children: ReactNode }) => (
+  <span className="inline-flex items-center gap-1.5 rounded-full border border-accent bg-background px-3 py-1 text-xs uppercase tracking-wider text-secondary">
+    {icon}
+    {children}
+  </span>
+);
+
+const Field = ({
+  icon,
+  label,
+  children,
+}: {
+  icon: ReactNode;
+  label: string;
+  children: ReactNode;
+}) => (
+  <div className="flex flex-col gap-1.5 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
+    <dt className="flex shrink-0 items-center gap-2 text-xs font-semibold uppercase tracking-wider text-secondary">
+      {icon}
+      {label}
+    </dt>
+    <dd className="min-w-0 text-sm text-primary sm:text-right">{children}</dd>
+  </div>
+);
+
+const ExpandableList = ({
+  items,
+  limit,
+  variant = "chips",
+}: {
+  items: string[];
+  limit: number;
+  variant?: "chips" | "lines";
+}) => {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? items : items.slice(0, limit);
+  const remaining = items.length - visible.length;
+
   return (
     <div
-      className={`${bonaNova.className} min-h-screen bg-background text-primary p-4 md:p-8 flex flex-col gap-8`}
+      className={
+        variant === "chips"
+          ? "flex flex-wrap items-center gap-1.5 sm:justify-end"
+          : "space-y-0.5"
+      }
     >
-      {/* Nút Back */}
-      <div className="max-w-6xl mx-auto w-full flex justify-start">
-        <button
-          onClick={() => router.push("/")} // Điều hướng về trang chủ
-          className="p-2 hover:bg-accent/40 rounded-full transition-colors cursor-pointer"
+      {visible.map((item, index) => (
+        <span
+          key={`${item}-${index}`}
+          className={
+            variant === "chips"
+              ? "max-w-full truncate rounded-full border border-accent bg-surface px-2.5 py-0.5 text-xs text-secondary"
+              : "block text-sm leading-snug text-primary"
+          }
         >
-          <FaArrowLeft className="text-lg text-primary" />
+          {item}
+        </span>
+      ))}
+
+      {items.length > limit && (
+        <button
+          type="button"
+          onClick={() => setExpanded((prev) => !prev)}
+          className="rounded-full px-1 text-xs font-bold text-secondary underline-offset-2 hover:underline"
+        >
+          {expanded ? "Show less" : `+${remaining} more`}
         </button>
-      </div>
-      {/* MAIN CONTAINER */}
-      <div className="max-w-[1400px] mx-auto px-4 md:px-8 w-full flex flex-col gap-8">
-        {/* 1. CARD CHÍNH - THÔNG TIN SÁCH */}
-        <section className="border-2 border-[#F57F7F]/60 rounded-3xl p-6 md:p-8 bg-background/50 relative shadow-sm">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-            {/* CỘT TRÁI: Bìa sách từ Database, Nút Borrow & Box From the Archive */}
-            <div className="md:col-span-5 flex flex-col items-center gap-6">
-              {/* 1. Khung hiển thị Bìa sách */}
-              <div className="relative w-full max-w-[320px] aspect-[3/4] bg-[#f5d0c6] p-3 rounded-sm shadow-md flex items-center justify-center overflow-hidden">
-                {book.coverUrl ? (
-                  /* Nếu database có URL ảnh bìa */
-                  <div className="relative w-full h-full">
-                    <Image
-                      src={book.coverUrl}
-                      alt={book.title || "Book Cover"}
-                      fill
-                      className="object-cover rounded-sm border border-[#EEB3A3]"
-                    />
-                  </div>
-                ) : (
-                  /* Nếu không có ảnh, hiển thị khung thiết kế cổ điển tự động điền từ DB */
-                  <div className="relative w-full h-full bg-[#62202f] text-[#fbf7e8] p-6 border border-[#EEB3A3]/40 flex flex-col justify-between items-center text-center">
-                    {/* 4 Họa tiết hình thoi góc bìa */}
-                    <span className="absolute top-1.5 left-1.5 text-[10px] text-[#EEB3A3]">
-                      ✦
-                    </span>
-                    <span className="absolute top-1.5 right-1.5 text-[10px] text-[#EEB3A3]">
-                      ✦
-                    </span>
-                    <span className="absolute bottom-1.5 left-1.5 text-[10px] text-[#EEB3A3]">
-                      ✦
-                    </span>
-                    <span className="absolute bottom-1.5 right-1.5 text-[10px] text-[#EEB3A3]">
-                      ✦
-                    </span>
-
-                    {/* Thể loại hoặc tên phụ từ DB */}
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-[#EEB3A3] pt-2">
-                      {book.genre || "Classic Literature"}
-                    </div>
-
-                    {/* Tên sách & Tác giả lấy từ biến book */}
-                    <div className="my-auto space-y-4 px-2">
-                      <div className="w-10 h-10 mx-auto border border-[#EEB3A3] rotate-45 flex items-center justify-center">
-                        <span className="-rotate-45 text-xs text-[#EEB3A3]">
-                          ✦
-                        </span>
-                      </div>
-
-                      <h1 className="text-2xl md:text-3xl font-bold tracking-wider uppercase text-[#fbf7e8] line-clamp-3">
-                        {book.title}
-                      </h1>
-
-                      <p className="text-xs uppercase tracking-[0.15em] text-[#EEB3A3]">
-                        {book.authorName}
-                      </p>
-                    </div>
-
-                    {/* Line trang trí dưới bìa */}
-                    <div className="w-20 h-[1px] bg-[#EEB3A3]/40 mb-2"></div>
-                  </div>
-                )}
-              </div>
-
-              {/* 2. Nút Borrow Book / Return Book */}
-              <button
-                onClick={() => setIsCheckedOut(!isCheckedOut)}
-                className="flex items-center gap-2 px-8 py-2.5 rounded-full border border-[#62202f] bg-[#fbf7e8] hover:bg-[#f5d0c6] transition-colors text-sm font-semibold text-[#62202f] shadow-sm cursor-pointer"
-              >
-                <FaBookOpen className="text-xs text-[#62202f]" />
-                <span>{isCheckedOut ? "Return Book" : "Borrow Book"}</span>
-              </button>
-
-              {/* 3. Box Trích dẫn "FROM THE ARCHIVE" */}
-              <div className="w-full max-w-[320px] bg-[#f5d0c6]/60 p-4 border-l-2 border-[#62202f]/80 text-left">
-                <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] mb-1 text-[#62202f]">
-                  From the Archive
-                </h4>
-                <p className="text-xs italic leading-relaxed text-[#62202f]/90">
-                  A journey through the first canticle of Dante&apos;s enduring
-                  literary masterpiece.
-                </p>
-              </div>
-            </div>
-            {/* CỘT PHẢI: Phần đầu (Tiêu đề, Tác giả, Tag) */}
-            <div className="md:col-span-7 flex flex-col gap-8">
-              {/* Header: Thanh ngang liền mạch và ngôi sao ✦ */}
-              <div className="space-y-4 pt-2">
-                <div className="relative w-full flex items-center">
-                  {/* Thanh ngang kéo dài liên tục */}
-                  <div className="absolute inset-x-0 h-[1px] bg-[#EEB3A3]"></div>
-                  {/* Ngôi sao nằm ở phía bên phải */}
-                  <span className="ml-auto relative z-10 bg-[#fbf7e8] pl-2 text-sm text-[#EEB3A3]">
-                    ✦
-                  </span>
-                </div>
-
-                {/* Tên sách từ Database */}
-                <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-[#62202f]">
-                  {book.title}
-                </h1>
-
-                {/* Tác giả & Ảnh đại diện tác giả từ Database */}
-                <div className="flex items-center gap-3 pt-1">
-                  <div className="relative w-9 h-9 rounded-full overflow-hidden bg-[#f5d0c6] border border-[#EEB3A3] flex items-center justify-center text-xs font-bold text-[#62202f]">
-                    {book.authorImageUrl ? (
-                      <Image
-                        src={book.authorImageUrl}
-                        alt={book.authorName || "Author"}
-                        fill
-                        className="object-cover"
-                      />
-                    ) : (
-                      <span>
-                        {book.authorName ? book.authorName.charAt(0) : "A"}
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-lg font-medium text-[#62202f]">
-                    by <span className="font-semibold">{book.authorName}</span>
-                  </span>
-                </div>
-
-                {/* Các Badges Tag lấy từ Database (Genre & Publish Year) */}
-                <div className="flex flex-wrap gap-3 pt-2">
-                  {book.genre && (
-                    <div className="flex items-center gap-2 border border-[#62202f] bg-[#fbf7e8] px-3 py-1 text-xs uppercase tracking-wider text-[#62202f]">
-                      <FaBookOpen className="text-xs" />
-                      <span>{book.genre}</span>
-                    </div>
-                  )}
-                  {book.publishYear && (
-                    <div className="flex items-center gap-2 border border-[#62202f] bg-[#fbf7e8] px-3 py-1 text-xs uppercase tracking-wider text-[#62202f]">
-                      <FaCalendarAlt className="text-xs" />
-                      <span>Edition: {book.publishYear}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <hr className="border-[#EEB3A3]" />
-              {/* SECTION: BOOK SUMMARY */}
-              <div className="space-y-3 pt-4">
-                <h3 className="flex items-center gap-2 text-lg font-bold uppercase tracking-wider text-[#62202f]">
-                  <FaBookOpen className="text-sm text-[#62202f]" />
-                  <span>Book Summary</span>
-                </h3>
-                <p className="text-base leading-relaxed text-[#62202f]/90">
-                  {book.description ||
-                    book.summary ||
-                    "No summary available for this book."}
-                </p>
-              </div>
-              <hr className="border-[#EEB3A3] my-6" />
-              {/* SECTION: PUBLICATION INFORMATION */}
-              <section className="space-y-3 pt-2">
-                <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-[#62202f]">
-                  <span className="text-xs text-[#F57F7F]">✦</span>
-                  <h3>Publication Information</h3>
-                  <div className="h-[1px] bg-[#EEB3A3] flex-1 ml-2"></div>
-                </div>
-
-                {/* Khung chứa chi tiết kỹ thuật có viền góc nghệ thuật */}
-                <div className="border border-[#EEB3A3] bg-[#fbf7e8] p-6 space-y-4 relative text-xs md:text-sm">
-                  <div className="absolute top-0 left-0 w-2.5 h-2.5 border-t-2 border-l-2 border-[#62202f]"></div>
-                  <div className="absolute bottom-0 right-0 w-2.5 h-2.5 border-b-2 border-r-2 border-[#62202f]"></div>
-
-                  {/* Publisher */}
-                  <div className="flex items-start justify-between border-b border-[#EEB3A3]/50 pb-3">
-                    <div className="flex items-center gap-2 font-semibold uppercase tracking-wider text-[#62202f]">
-                      <FaBuilding />
-                      <span>Publisher</span>
-                    </div>
-
-                    <div className="text-right flex flex-col items-end gap-1">
-                      {(() => {
-                        const rawPublisher = (book?.publishers ??
-                          book?.publishers ??
-                          "[PUBLISHER]") as string | string[];
-                        let publishersList: string[] = [];
-
-                        if (Array.isArray(rawPublisher)) {
-                          publishersList = rawPublisher.map(String);
-                        } else if (typeof rawPublisher === "string") {
-                          publishersList = rawPublisher
-                            .split(/,|\n/)
-                            .map((p) => p.trim())
-                            .filter(Boolean);
-                        } else {
-                          publishersList = [String(rawPublisher)];
-                        }
-
-                        const visiblePublishers = showAllPublishers
-                          ? publishersList
-                          : publishersList.slice(0, 2);
-                        const hasMore = publishersList.length > 2;
-
-                        return (
-                          <>
-                            <div className="flex flex-col items-end gap-1 text-[#62202f]">
-                              {visiblePublishers.map((pub, idx) => (
-                                <span
-                                  key={idx}
-                                  className="font-semibold block text-right leading-snug"
-                                >
-                                  {pub}
-                                </span>
-                              ))}
-                            </div>
-
-                            {hasMore && (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setShowAllPublishers(!showAllPublishers)
-                                }
-                                className="text-xs text-[#F57F7F] font-bold hover:underline mt-1 cursor-pointer"
-                              >
-                                {showAllPublishers
-                                  ? "− Show less"
-                                  : `+ ${publishersList.length - 2} more`}
-                              </button>
-                            )}
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </div>
-
-                  {/* Publication Year */}
-                  <div className="flex justify-between items-center border-b border-[#EEB3A3]/50 pb-3">
-                    <div className="flex items-center gap-2 font-semibold uppercase tracking-wider text-[#62202f]">
-                      <FaCalendarAlt />
-                      <span>Publication Year</span>
-                    </div>
-                    <span>{book.publishYear || "N/A"}</span>
-                  </div>
-
-                  {/* Language */}
-                  <div className="flex justify-between items-center border-b border-[#EEB3A3]/50 pb-3">
-                    <div className="flex items-center gap-2 font-semibold uppercase tracking-wider text-[#62202f]">
-                      <FaGlobe />
-                      <span>Language</span>
-                    </div>
-                    <span className="uppercase">{book.language || "eng"}</span>
-                  </div>
-
-                  {/* Category */}
-                  <div className="flex justify-between items-center border-b border-[#EEB3A3]/50 pb-3">
-                    <div className="flex items-center gap-2 font-semibold uppercase tracking-wider text-[#62202f]">
-                      <FaBookmark />
-                      <span>Category</span>
-                    </div>
-                    <span>{book.genre || "General"}</span>
-                  </div>
-
-                  {/* Subjects */}
-                  {book.subjects && book.subjects.length > 0 && (
-                    <div className="border-b border-[#EEB3A3]/50 pb-3 space-y-1">
-                      <div className="font-semibold uppercase tracking-wider text-[#62202f]">
-                        Subjects
-                      </div>
-                      <p className="italic text-[#62202f]/80">
-                        {book.subjects.join(" · ")}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Subject Places */}
-                  {book.subjectPlaces && book.subjectPlaces.length > 0 && (
-                    <div className="border-b border-[#EEB3A3]/50 pb-3 space-y-1">
-                      <div className="font-semibold uppercase tracking-wider text-[#62202f]">
-                        Subject Places
-                      </div>
-                      <p className="italic text-[#62202f]/80">
-                        {book.subjectPlaces.join(" · ")}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Subject Times */}
-                  {book.subjectTimes && book.subjectTimes.length > 0 && (
-                    <div className="space-y-1">
-                      <div className="font-semibold uppercase tracking-wider text-[#62202f]">
-                        Subject Times
-                      </div>
-                      <p className="italic text-[#62202f]/80">
-                        {book.subjectTimes.join(" · ")}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </section>
-            </div>
-          </div>
-        </section>
-      </div>
+      )}
     </div>
   );
-}
+};
+
+const BookDetail = ({ book, similarBooks, reviewState, viewerId }: Props) => {
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+  const [isBorrowed, setIsBorrowed] = useState(false);
+  const [borrowedIds, setBorrowedIds] = useState<Set<string>>(new Set());
+
+  const outOfStock = book.availableQuantity <= 0;
+  const remaining = book.availableQuantity - (isBorrowed ? 1 : 0);
+  const hasLongDescription =
+    book.description.length > DESCRIPTION_PREVIEW_CHARS;
+
+  const toggleSimilarBorrow = (id: string) => {
+    const target = similarBooks.find((item) => item.id === id);
+    if (!target) return;
+
+    const adding = !borrowedIds.has(id);
+
+    setBorrowedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+    if (adding) {
+      notify.success("Added to your borrow list", {
+        description: target.title,
+      });
+    } else {
+      notify.info("Removed from your borrow list", {
+        description: target.title,
+      });
+    }
+  };
+
+  return (
+    <div className="mx-auto w-full max-w-6xl px-4 pb-20 pt-8 sm:px-6">
+      <Link
+        href="/books"
+        className="inline-flex items-center gap-2 rounded-full border border-accent bg-surface px-4 py-2 text-sm text-secondary transition hover:border-secondary hover:text-primary"
+      >
+        <LuArrowLeft className="size-4" />
+        Back to books
+      </Link>
+
+      <article className="mt-6 grid gap-8 rounded-2xl border border-accent bg-surface p-5 shadow-soft md:grid-cols-[minmax(0,300px)_minmax(0,1fr)] md:p-8">
+        {/* Cover + Borrow */}
+        <div className="flex flex-col gap-5">
+          <div className="relative mx-auto aspect-2/3 w-full max-w-75 overflow-hidden rounded-lg bg-accent/40 shadow-md ring-1 ring-primary/10">
+            {book.coverUrl ? (
+              <Image
+                src={book.coverUrl}
+                alt={`Cover of ${book.title}`}
+                fill
+                priority
+                sizes="(max-width: 768px) 80vw, 300px"
+                className="object-cover"
+              />
+            ) : (
+              <div className="flex h-full flex-col items-center justify-center gap-3 p-5 text-center text-secondary">
+                <LuBookOpen className="size-10" />
+                <span className="line-clamp-5 text-base">{book.title}</span>
+              </div>
+            )}
+
+            <span className="absolute left-2 top-2 max-w-[85%] truncate rounded-full bg-background/90 px-2.5 py-0.5 text-xs text-secondary backdrop-blur">
+              {book.genre}
+            </span>
+          </div>
+
+          <div className="mx-auto w-full max-w-75 space-y-3">
+            <p className="flex items-center justify-center gap-1.5 text-xs text-muted">
+              <span
+                className={`size-2 shrink-0 rounded-full ${remaining > 0 ? "bg-emerald-500" : "bg-accent-deep"}`}
+              />
+              {remaining > 0
+                ? `${remaining} ${remaining === 1 ? "copy" : "copies"} available`
+                : outOfStock
+                  ? "Currently out of stock"
+                  : "All copies reserved"}
+            </p>
+
+            <button
+              type="button"
+              disabled={outOfStock}
+              aria-pressed={isBorrowed}
+              onClick={() => setIsBorrowed((prev) => !prev)}
+              className={`inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border text-sm transition ${
+                outOfStock
+                  ? "cursor-not-allowed border-accent bg-accent/30 text-muted/70"
+                  : isBorrowed
+                    ? "border-primary bg-secondary text-background hover:bg-primary"
+                    : "border-primary bg-primary text-background hover:bg-secondary"
+              }`}
+            >
+              {outOfStock ? (
+                "Unavailable"
+              ) : isBorrowed ? (
+                <>
+                  <LuCheck className="size-4" /> Borrowed
+                </>
+              ) : (
+                <>
+                  <LuBookmarkPlus className="size-4" /> Borrow this book
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Details */}
+        <div className="flex min-w-0 flex-col gap-6">
+          <header className="space-y-4">
+            <h1 className="text-3xl font-bold leading-tight text-primary md:text-4xl">
+              {book.title}
+            </h1>
+
+            <div className="flex items-center gap-3">
+              <div className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-accent bg-accent/40 text-sm font-bold text-secondary">
+                {book.authorImageUrl ? (
+                  <Image
+                    src={book.authorImageUrl}
+                    alt={book.authorName}
+                    fill
+                    sizes="40px"
+                    className="object-cover"
+                  />
+                ) : (
+                  <span>{book.authorName.charAt(0)}</span>
+                )}
+              </div>
+              <p className="text-base text-secondary">
+                by <span className="font-bold text-primary">{book.authorName}</span>
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Badge icon={<LuTag className="size-3.5" />}>{book.genre}</Badge>
+              <Badge icon={<LuCalendarDays className="size-3.5" />}>
+                {book.publishYear}
+              </Badge>
+              <Badge icon={<LuGlobe className="size-3.5" />}>
+                {getLanguageName(book.language)}
+              </Badge>
+              <Badge icon={<StarRating value={book.rating ?? 0} size="sm" />}>
+                {book.rating !== null
+                  ? `${book.rating.toFixed(1)} / 5 · ${book.ratingCount} ${
+                      book.ratingCount === 1 ? "rating" : "ratings"
+                    }`
+                  : "Not rated yet"}
+              </Badge>
+              <Badge icon={<LuUsers className="size-3.5" />}>
+                {book.borrowCount} {book.borrowCount === 1 ? "borrow" : "borrows"}
+              </Badge>
+            </div>
+          </header>
+
+          {/* Description */}
+          <section className="space-y-2.5">
+            <h2 className="text-xs font-bold uppercase tracking-[0.15em] text-secondary">
+              Description
+            </h2>
+            <p
+              className={`whitespace-pre-line wrap-break-word text-sm leading-relaxed text-primary/85 ${
+                hasLongDescription && !descriptionExpanded ? "line-clamp-6" : ""
+              }`}
+            >
+              {book.description || "No description available for this book."}
+            </p>
+            {hasLongDescription && (
+              <button
+                type="button"
+                onClick={() => setDescriptionExpanded((prev) => !prev)}
+                className="text-xs font-bold uppercase tracking-wider text-secondary underline-offset-2 hover:underline"
+              >
+                {descriptionExpanded ? "Show less" : "See more"}
+              </button>
+            )}
+          </section>
+
+          {/* Publication information */}
+          <section className="space-y-2">
+            <h2 className="text-xs font-bold uppercase tracking-[0.15em] text-secondary">
+              Publication information
+            </h2>
+
+            <dl className="divide-y divide-accent/70 rounded-xl border border-accent/70 bg-background/60 px-5 py-1">
+              {book.publishers.length > 0 && (
+                <Field
+                  icon={<LuBuilding2 className="size-3.5" />}
+                  label="Publishers"
+                >
+                  <ExpandableList
+                    items={book.publishers}
+                    limit={PUBLISHER_PREVIEW}
+                    variant="lines"
+                  />
+                </Field>
+              )}
+
+              <Field icon={<LuCalendarDays className="size-3.5" />} label="Year">
+                {book.publishYear || "—"}
+              </Field>
+
+              <Field icon={<LuGlobe className="size-3.5" />} label="Language">
+                {getLanguageName(book.language)}
+              </Field>
+
+              <Field icon={<LuTag className="size-3.5" />} label="Category">
+                {book.genre || "—"}
+              </Field>
+
+              <Field icon={<LuHash className="size-3.5" />} label="Copies available">
+                {book.availableQuantity}
+              </Field>
+
+              <Field icon={<LuUsers className="size-3.5" />} label="Times borrowed">
+                {book.borrowCount}
+              </Field>
+
+              <Field
+                icon={<LuStar className="size-3.5" />}
+                label="Average rating"
+              >
+                {book.rating !== null ? (
+                  <span className="inline-flex flex-wrap items-center gap-2 sm:justify-end">
+                    <StarRating value={book.rating} size="sm" />
+                    <span>
+                      {book.rating.toFixed(2)} / 5 · {book.ratingCount}{" "}
+                      {book.ratingCount === 1 ? "rating" : "ratings"}
+                    </span>
+                  </span>
+                ) : (
+                  "Not rated yet"
+                )}
+              </Field>
+
+              <Field icon={<LuClock className="size-3.5" />} label="Added on">
+                {formatDate(book.createdAt)}
+              </Field>
+
+              {book.subjects.length > 0 && (
+                <Field icon={<LuBookOpen className="size-3.5" />} label="Subjects">
+                  <ExpandableList items={book.subjects} limit={CHIP_PREVIEW} />
+                </Field>
+              )}
+
+              {book.subjectPlaces.length > 0 && (
+                <Field icon={<LuMapPin className="size-3.5" />} label="Settings">
+                  <ExpandableList
+                    items={book.subjectPlaces}
+                    limit={CHIP_PREVIEW}
+                  />
+                </Field>
+              )}
+
+              {book.subjectTimes.length > 0 && (
+                <Field icon={<LuClock className="size-3.5" />} label="Time periods">
+                  <ExpandableList
+                    items={book.subjectTimes}
+                    limit={CHIP_PREVIEW}
+                  />
+                </Field>
+              )}
+            </dl>
+          </section>
+        </div>
+      </article>
+
+      <BookReviews
+        bookId={book.id}
+        initial={reviewState}
+        viewerId={viewerId}
+      />
+
+      {/* Similar books */}
+      {similarBooks.length > 0 && (
+        <section className="mt-12 space-y-5">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-2xl font-bold text-primary">
+                More in {book.genre}
+              </h2>
+              <p className="mt-1 text-sm text-muted">
+                More {book.genre.toLowerCase()} titles from the library.
+              </p>
+            </div>
+            <Link
+              href="/books"
+              className="text-sm text-secondary underline-offset-2 hover:text-primary hover:underline"
+            >
+              Browse all books
+            </Link>
+          </div>
+
+          <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {similarBooks.map((item) => (
+              <li key={item.id}>
+                <BookCard
+                  book={item}
+                  borrowed={borrowedIds.has(item.id)}
+                  onToggle={toggleSimilarBorrow}
+                />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
+  );
+};
+
+export default BookDetail;

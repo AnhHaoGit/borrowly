@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSession } from "next-auth/react";
 import { LuBookOpen, LuLoader, LuLogOut, LuMenu, LuX } from "react-icons/lu";
 import AnonymousAvatar from "@/components/ui/AnonymousAvatar";
@@ -14,14 +14,16 @@ const LINKS = [
   { href: "/profile", label: "Profile" },
 ];
 
-const Navbar = () => {
-  const pathname = usePathname();
+// `usePathname()` đọc URL chỉ có ở runtime nên phải nằm trong Suspense,
+// nếu không Next.js sẽ chặn prerender toàn bộ layout.
+// `pathname === null` là trạng thái fallback: không link nào được đánh dấu active.
+const NavbarFrame = ({ pathname }: { pathname: string | null }) => {
   const { data: session, status } = useSession();
   const { signOutUser, pending } = useSignOut();
   const [open, setOpen] = useState(false);
 
   const isActive = (href: string) =>
-    pathname === href || pathname.startsWith(`${href}/`);
+    pathname === href || (pathname?.startsWith(`${href}/`) ?? false);
 
   // Chưa có `overflow-hidden` ở header: ô avatar bung ra phía dưới navbar sẽ bị cắt mất nếu có.
   return (
@@ -163,5 +165,17 @@ const Navbar = () => {
     </header>
   );
 };
+
+const NavbarWithPathname = () => {
+  const pathname = usePathname();
+
+  return <NavbarFrame pathname={pathname} />;
+};
+
+const Navbar = () => (
+  <Suspense fallback={<NavbarFrame pathname={null} />}>
+    <NavbarWithPathname />
+  </Suspense>
+);
 
 export default Navbar;

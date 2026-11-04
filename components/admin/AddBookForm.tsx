@@ -10,7 +10,7 @@ import type { Book } from "@/types/book";
 // What the form submits: a Book minus everything the server fills in
 export type NewBookInput = Omit<
   Book,
-  "id" | "rating" | "borrowCount" | "createdAt"
+  "id" | "rating" | "ratingCount" | "borrowCount" | "createdAt"
 >;
 
 // Same limits as the seed script

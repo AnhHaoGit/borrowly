@@ -32,6 +32,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:54.061652+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/6783231-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -92,6 +93,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:53.756558+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/14356956-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -146,6 +148,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:53.756558+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/6155644-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -200,6 +203,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:54.3317+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/7425961-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -254,6 +258,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:54.061652+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/6390046-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -308,6 +313,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:54.061652+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/3367142-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -362,6 +368,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:53.012811+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/7425961-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -423,6 +430,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:53.012811+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/9074994-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -477,6 +485,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:54.588254+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/14356956-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -531,6 +540,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:54.588254+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/9330730-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -590,6 +600,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:53.012811+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/6209517-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -642,6 +653,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:54.588254+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/8999116-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -707,6 +719,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:54.588254+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/6390046-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -760,6 +773,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:53.012811+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/5730003-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -814,6 +828,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:53.012811+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/6992303-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -857,6 +872,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:54.061652+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/12880021-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -911,6 +927,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:54.853255+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/14356956-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -965,6 +982,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:54.588254+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/14567113-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -1010,6 +1028,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:54.061652+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/3366990-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -1064,6 +1083,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:54.588254+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/6458523-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -1134,6 +1154,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:54.853255+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/11656737-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -1194,6 +1215,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:54.061652+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/6783231-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -1248,6 +1270,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:53.012811+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/6388033-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -1315,6 +1338,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:54.588254+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/9329892-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -1385,6 +1409,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:54.853255+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/14337536-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -1446,6 +1471,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:53.756558+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/15214274-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -1500,6 +1526,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:53.012811+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/14364506-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -1554,6 +1581,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:53.756558+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/6155644-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -1614,6 +1642,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:54.061652+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/11568179-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
@@ -1668,6 +1697,7 @@ export const books = [
     createdAt: "2026-10-17 06:00:54.3317+00",
     authorImageUrl: "https://covers.openlibrary.org/a/id/6390047-M.jpg",
     rating: null,
+    ratingCount: 0,
     borrowCount: 0,
     language: "eng",
     subjects: [
