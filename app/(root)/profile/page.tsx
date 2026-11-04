@@ -1,12 +1,22 @@
 import Image from "next/image";
+// Khi nối DB thật thì đổi thành "@/database/queries"
 import {
   getUserById,
   getRentedBooksByUserId,
   type RentedBook,
 } from "@/database/queries.mock";
 
-// Change to "bob" to see the empty state
 const CURRENT_USER_ID = "alice";
+
+const THEME = {
+  page: "bg-[#fbf7e8]",
+  card: "bg-[#f5d0c6] rounded-2xl shadow-sm",
+  cardHover: "hover:shadow-md transition-shadow duration-200",
+  cover: "bg-[#e8beba] rounded-xl",
+  title: "text-[#62202f]",
+  text: "text-[#62202f]/80",
+  accent: "border-[#62202f]",
+};
 
 function formatDate(date: string | Date): string {
   return new Date(date).toLocaleDateString("en-IN", {
@@ -17,30 +27,52 @@ function formatDate(date: string | Date): string {
   });
 }
 
+// Thẻ sách: Bìa sách rộng toàn bộ mặt trước, tối ưu không gian thẻ
 function BookCard({ book }: { book: RentedBook }) {
+  const overdue = book.status === "OVERDUE";
+
   return (
-    <li className="bg-white p-4 rounded-lg shadow hover:shadow-lg transition">
-      <div className="relative h-48 bg-gray-200 rounded mb-4 overflow-hidden">
+    <li className={`${THEME.card} ${THEME.cardHover} p-3 flex flex-col h-full`}>
+      {/* Cover image prominently displayed at the front (full width) */}
+      <div
+        className={`relative aspect-[2/3] w-full mb-3 overflow-hidden shadow-sm ${THEME.cover}`}
+      >
         <Image
           src={book.coverUrl}
           alt={`Cover of ${book.title}`}
           fill
-          sizes="(min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
-          className="object-contain"
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 200px"
+          className="object-cover scale-[1.15] -translate-x-[7%]"
         />
       </div>
-      <h3 className="font-bold text-gray-900">{book.title}</h3>
-      <p className="text-sm text-gray-500">{book.authorName}</p>
-      {book.dueDate && (
-        <p
-          className={`text-sm mt-2 ${
-            book.status === "OVERDUE" ? "text-red-600" : "text-gray-600"
-          }`}
-        >
-          {book.status === "OVERDUE" ? "Overdue since " : "Due "}
-          {formatDate(book.dueDate)}
-        </p>
-      )}
+
+      <div className="flex flex-col flex-grow justify-between">
+        <div>
+          <h3 className={`text-base font-bold leading-tight line-clamp-2 ${THEME.title}`}>
+            {book.title}
+          </h3>
+
+          <p className={`mt-0.5 text-xs font-medium ${THEME.text}`}>
+            {book.authorName}
+          </p>
+        </div>
+
+        {/* Dynamic due date stuck cleanly to the bottom */}
+        {book.dueDate && (
+          <div className="mt-3 border-t border-[#62202f]/15 pt-2">
+            <p
+              className={`text-[10px] font-semibold uppercase tracking-wider ${
+                overdue ? "text-red-700" : THEME.text
+              }`}
+            >
+              {overdue ? "Overdue since" : "Due"}
+            </p>
+            <p className={`text-xs font-medium ${overdue ? "text-red-700 font-bold" : THEME.text}`}>
+              {formatDate(book.dueDate)}
+            </p>
+          </div>
+        )}
+      </div>
     </li>
   );
 }
@@ -50,58 +82,60 @@ export default async function ProfilePage() {
 
   if (!user) {
     return (
-      <main className="min-h-screen bg-[#fbf7e8] flex items-center justify-center">
-        <p className="text-gray-700">We couldn&apos;t find your profile yet.</p>
-      </main>
+      <div className={`min-h-[60vh] ${THEME.page} flex items-center justify-center`}>
+        <p className={THEME.text}>We couldn&apos;t find your profile yet.</p>
+      </div>
     );
   }
 
   const rentedBooks = await getRentedBooksByUserId(user.id);
 
   return (
-    <main className="min-h-screen bg-[#fbf7e8]">
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6 text-gray-800">My Profile</h1>
+    <div className={`min-h-[60vh] ${THEME.page}`}>
+      <div className="container mx-auto px-4 py-6 max-w-6xl">
+        {/* Compact grid layout for profile sidebar & book section */}
+        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6 items-start">
+          
+          {/* Profile Details Sidebar */}
+          <aside
+            aria-label="Profile information"
+            className={`${THEME.card} p-4 flex flex-row lg:flex-col items-center text-left lg:text-center gap-4 lg:sticky lg:top-20`}
+          >
+            <Image
+              src="/Avatar.png"
+              alt={`${user.fullName}'s avatar`}
+              width={72}
+              height={72}
+              className={`rounded-full object-cover border-2 shrink-0 ${THEME.accent}`}
+            />
+            <div className="min-w-0 w-full">
+              <h1 className={`text-lg font-bold break-words leading-tight ${THEME.title}`}>
+                {user.fullName}
+              </h1>
+              <p className={`text-xs mt-0.5 break-all ${THEME.text}`}>{user.email}</p>
+            </div>
+          </aside>
 
-        {/* Profile info */}
-        <section
-          aria-label="Profile information"
-          className="bg-white p-6 rounded-lg shadow-md mb-8 flex items-center gap-6"
-        >
-          <Image
-            src={user.avatarUrl}
-            alt={`${user.fullName}'s avatar`}
-            width={96}
-            height={96}
-            className="rounded-full object-cover border-2 border-indigo-500"
-          />
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900">
-              {user.fullName}
+          {/* Borrowed Books Section */}
+          <section>
+            <h2 className={`text-xl font-bold mb-3 ${THEME.title}`}>
+              Borrowed Books
             </h2>
-            <p className="text-gray-600">{user.email}</p>
-            <p className="text-gray-600">{user.phone}</p>
-            <p className="text-gray-600">
-              Born {formatDate(user.dateOfBirth)}
-            </p>
-          </div>
-        </section>
 
-        {/* Rented books */}
-        <section>
-          <h2 className="text-xl font-bold mb-4 text-gray-800">Rented Books</h2>
-
-          {rentedBooks.length === 0 ? (
-            <p className="text-gray-700">You have yet to rent any books</p>
-          ) : (
-            <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-              {rentedBooks.map((book) => (
-                <BookCard key={book.receiptId} book={book} />
-              ))}
-            </ul>
-          )}
-        </section>
+            {rentedBooks.length === 0 ? (
+              <p className={`text-sm ${THEME.text}`}>
+                You have yet to rent any books
+              </p>
+            ) : (
+              <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-3.5">
+                {rentedBooks.map((book) => (
+                  <BookCard key={book.receiptId} book={book} />
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
       </div>
-    </main>
+    </div>
   );
 }
