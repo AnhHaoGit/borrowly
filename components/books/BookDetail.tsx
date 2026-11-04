@@ -145,7 +145,7 @@ export default function BookDetail({ book }: Props) {
                   {book.title}
                 </h1>
 
-                {/* Tác giả & Ảnh đại diện tác giả từ Database */}
+                {/* Tác giả & Ảnh đại diện tác giả  */}
                 <div className="flex items-center gap-3 pt-1">
                   <div className="relative w-9 h-9 rounded-full overflow-hidden bg-[#f5d0c6] border border-[#EEB3A3] flex items-center justify-center text-xs font-bold text-[#62202f]">
                     {book.authorImageUrl ? (
@@ -164,7 +164,7 @@ export default function BookDetail({ book }: Props) {
                   </span>
                 </div>
 
-                {/* Các Badges Tag lấy từ Database (Genre & Publish Year) */}
+                {/*(Genre & Publish Year) */}
                 <div className="flex flex-wrap gap-3 pt-2">
                   {book.genre && (
                     <div className="flex items-center gap-2 border border-[#62202f] bg-[#fbf7e8] px-3 py-1 text-xs uppercase tracking-wider text-[#62202f]">
@@ -191,8 +191,9 @@ export default function BookDetail({ book }: Props) {
                 {book.description || book.summary || "No summary available for this book."}
               </p>
             </div>
+           
             <hr className="border-[#EEB3A3] my-6" />
-            {/* SECTION: PUBLICATION INFORMATION */}
+            {/* Publication Information */}
           <section className="space-y-3 pt-2">
             <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-[#62202f]">
               <span className="text-xs text-[#F57F7F]">✦</span>
@@ -281,16 +282,49 @@ export default function BookDetail({ book }: Props) {
               </div>
 
               {/* Subjects */}
-              {book.subjects && book.subjects.length > 0 && (
-                <div className="border-b border-[#EEB3A3]/50 pb-3 space-y-1">
-                  <div className="font-semibold uppercase tracking-wider text-[#62202f]">
-                    Subjects
+              {(() => {
+                const rawSubjects = (book?.subjects ?? [
+                  "Poetry", 
+                  "Hell", 
+                  "Illustrations", 
+                  "Iconography", 
+                  "Translations into English"
+                ]) as string | string[];
+
+                let subjectsList: string[] = [];
+                if (Array.isArray(rawSubjects)) {
+                  subjectsList = rawSubjects.map(String);
+                } else if (typeof rawSubjects === "string") {
+                  subjectsList = rawSubjects.split(/,|\n/).map(s => s.trim()).filter(Boolean);
+                } else {
+                  subjectsList = [String(rawSubjects)];
+                }
+
+                if (subjectsList.length === 0) return null;
+
+                return (
+                  <div className="border-b border-[#EEB3A3]/50 pb-4 space-y-3">
+                    <div className="flex items-center gap-2 font-semibold uppercase tracking-wider text-[#62202f]">
+                      <FaBookmark />
+                      <span>Subjects</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {subjectsList.map((subj, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            router.push(`/books?subject=${encodeURIComponent(subj)}`);
+                          }}
+                          className="border border-[#EEB3A3] rounded-full px-3 py-1 text-xs font-medium text-[#62202f] bg-[#fbf7e8] hover:bg-[#f5d0c6] transition-all cursor-pointer"
+                        >
+                          {subj}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <p className="italic text-[#62202f]/80">
-                    {book.subjects.join(" · ")}
-                  </p>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Subject Places */}
               {book.subjectPlaces && book.subjectPlaces.length > 0 && (
@@ -317,11 +351,8 @@ export default function BookDetail({ book }: Props) {
               )}
             </div>
           </section>
-            
-            </div>
-          
-
-        </div>
+           </div>
+          </div>
       </section>
     </div>
     </div>
