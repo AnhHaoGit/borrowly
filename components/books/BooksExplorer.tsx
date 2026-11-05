@@ -6,8 +6,9 @@ import FilterPanel from "./FilterPanel";
 import BookGrid from "./BookGrid";
 import Pagination from "./Pagination";
 import { PageLoader } from "@/components/ui/Loader";
-import { notify } from "@/lib/toast";
+import { BORROW_LIMIT } from "@/lib/receipts";
 import type { Book, Filters } from "../../types/book";
+import type { BorrowStatus } from "@/types/ticket";
 import { useSession } from "next-auth/react";
 
 const PAGE_SIZE = 12;
@@ -31,12 +32,13 @@ interface BooksResponse {
   pageSize: number;
   total: number;
   totalPages: number;
+  borrowStates?: Record<string, BorrowStatus>;
+  activeBorrowCount?: number;
 }
 
 const BooksExplorer = ({ genres }: Props) => {
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [page, setPage] = useState(1);
-  const [borrowedIds, setBorrowedIds] = useState<Set<string>>(new Set());
 
   const [books, setBooks] = useState<Book[]>([]);
   const [total, setTotal] = useState(0);
@@ -44,8 +46,17 @@ const BooksExplorer = ({ genres }: Props) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Trạng thái phiếu người xem đang giữ, do API trả về cùng danh sách sách.
+  const [borrowStates, setBorrowStates] = useState<Record<string, BorrowStatus>>(
+    {},
+  );
+  const [activeBorrowCount, setActiveBorrowCount] = useState(0);
+
   const resultsRef = useRef<HTMLDivElement>(null);
   const { status } = useSession();
+
+  const isAuthenticated = status === "authenticated";
+  const borrowLimitReached = activeBorrowCount >= BORROW_LIMIT;
 
   const fetchBooks = useCallback(
     async (signal: AbortSignal) => {
@@ -84,6 +95,8 @@ const BooksExplorer = ({ genres }: Props) => {
         setBooks(data.items);
         setTotal(data.total);
         setTotalPages(Math.max(1, data.totalPages));
+        setBorrowStates(data.borrowStates ?? {});
+        setActiveBorrowCount(data.activeBorrowCount ?? 0);
         setError(null);
       } catch (err) {
         if (signal.aborted) return;
@@ -129,28 +142,21 @@ const BooksExplorer = ({ genres }: Props) => {
     });
   };
 
-  const toggleBorrow = (id: string) => {
-    const book = books.find((b) => b.id === id);
-    if (!book) return;
-
-    const adding = !borrowedIds.has(id);
-
-    setBorrowedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-
-    if (adding) {
-      notify.success("Added to your borrow list", {
-        description: book.title,
-      });
-    } else {
-      notify.info("Removed from your borrow list", {
-        description: book.title,
-      });
-    }
+  // Cập nhật tại chỗ ngay khi tạo phiếu xong: nút chuyển sang Pending pickup và
+  // số lượng khả dụng giảm một, không cần tải lại cả danh sách.
+  const handleBorrowed = (id: string) => {
+    setBorrowStates((prev) => ({ ...prev, [id]: "PENDING" }));
+    setActiveBorrowCount((prev) => prev + 1);
+    setBooks((prev) =>
+      prev.map((book) =>
+        book.id === id
+          ? {
+              ...book,
+              availableQuantity: Math.max(0, book.availableQuantity - 1),
+            }
+          : book,
+      ),
+    );
   };
 
   const goToPage = (nextPage: number) => {
@@ -206,12 +212,15 @@ const BooksExplorer = ({ genres }: Props) => {
           )}
         </p>
 
-        {borrowedIds.size > 0 && (
-          <p className="rounded-full bg-accent px-3 py-1 text-sm text-primary">
-            {borrowedIds.size} {borrowedIds.size === 1 ? "book" : "books"} to
-            borrow
-          </p>
-        )}
+        <p
+          className={`rounded-full px-3 py-1 text-sm ${
+            borrowLimitReached
+              ? "bg-danger/10 font-bold text-danger"
+              : "bg-accent text-primary"
+          }`}
+        >
+          {activeBorrowCount} / {BORROW_LIMIT} books borrowed
+        </p>
       </div>
 
       {error ? (
@@ -232,8 +241,10 @@ const BooksExplorer = ({ genres }: Props) => {
       ) : (
         <BookGrid
           books={books}
-          borrowedIds={borrowedIds}
-          onToggleBorrow={toggleBorrow}
+          borrowStates={borrowStates}
+          borrowLimitReached={borrowLimitReached}
+          isAuthenticated={isAuthenticated}
+          onBorrowed={handleBorrowed}
         />
       )}
 

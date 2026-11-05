@@ -1,13 +1,22 @@
 import BookCard from "./BookCard";
 import type { Book } from "@/types/book";
+import type { BorrowStatus } from "@/types/ticket";
 
 interface Props {
   books: Book[];
-  borrowedIds: Set<string>;
-  onToggleBorrow: (id: string) => void;
+  borrowStates: Record<string, BorrowStatus>;
+  borrowLimitReached: boolean;
+  isAuthenticated: boolean;
+  onBorrowed?: (id: string) => void;
 }
 
-const BookGrid = ({ books, borrowedIds, onToggleBorrow }: Props) => {
+const BookGrid = ({
+  books,
+  borrowStates,
+  borrowLimitReached,
+  isAuthenticated,
+  onBorrowed,
+}: Props) => {
   if (books.length === 0) {
     return (
       <div className="rounded-2xl border-2 border-dashed border-accent-deep/60 bg-surface px-6 py-16 text-center">
@@ -25,8 +34,10 @@ const BookGrid = ({ books, borrowedIds, onToggleBorrow }: Props) => {
         <li key={book.id}>
           <BookCard
             book={book}
-            borrowed={borrowedIds.has(book.id)}
-            onToggle={onToggleBorrow}
+            borrowStatus={borrowStates[book.id] ?? null}
+            borrowLimitReached={borrowLimitReached}
+            isAuthenticated={isAuthenticated}
+            onBorrowed={onBorrowed}
           />
         </li>
       ))}

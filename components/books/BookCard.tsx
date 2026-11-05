@@ -1,17 +1,26 @@
 import Image from "next/image";
 import Link from "next/link";
-import { LuBookmarkPlus, LuBookOpen, LuCheck } from "react-icons/lu";
+import { LuBookOpen } from "react-icons/lu";
+import BorrowButton from "./BorrowButton";
 import type { Book } from "../../types/book";
+import type { BorrowStatus } from "@/types/ticket";
 
 interface Props {
   book: Book;
-  borrowed: boolean;
-  onToggle: (id: string) => void;
+  borrowStatus: BorrowStatus | null;
+  borrowLimitReached: boolean;
+  isAuthenticated: boolean;
+  onBorrowed?: (id: string) => void;
 }
 
-const BookCard = ({ book, borrowed, onToggle }: Props) => {
-  const remaining = book.availableQuantity - (borrowed ? 1 : 0);
-  const outOfStock = book.availableQuantity <= 0;
+const BookCard = ({
+  book,
+  borrowStatus,
+  borrowLimitReached,
+  isAuthenticated,
+  onBorrowed,
+}: Props) => {
+  const available = book.availableQuantity > 0;
 
   return (
     <article className="group flex h-full flex-col rounded-2xl border border-accent bg-surface p-4 shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-lift">
@@ -61,43 +70,27 @@ const BookCard = ({ book, borrowed, onToggle }: Props) => {
 
           <p className="mt-3 flex items-center gap-1.5 text-xs text-muted">
             <span
-              className={`size-2 shrink-0 rounded-full ${remaining > 0 ? "bg-emerald-500" : "bg-accent-deep"}`}
+              className={`size-2 shrink-0 rounded-full ${available ? "bg-emerald-500" : "bg-accent-deep"}`}
             />
-            {remaining > 0
-              ? `${remaining} ${remaining === 1 ? "copy" : "copies"} available`
-              : outOfStock
-                ? "Currently out of stock"
-                : "All copies reserved"}
+            {available
+              ? `${book.availableQuantity} ${book.availableQuantity === 1 ? "copy" : "copies"} available`
+              : "Currently out of stock"}
           </p>
         </div>
       </Link>
 
       {/* Action */}
-      <button
-        type="button"
-        disabled={outOfStock}
-        aria-pressed={borrowed}
-        onClick={() => onToggle(book.id)}
-        className={`mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border text-sm transition ${
-          outOfStock
-            ? "cursor-not-allowed border-accent bg-accent/30 text-muted/70"
-            : borrowed
-              ? "border-primary bg-secondary text-background hover:bg-primary"
-              : "border-primary bg-primary text-background hover:bg-secondary"
-        }`}
-      >
-        {outOfStock ? (
-          "Unavailable"
-        ) : borrowed ? (
-          <>
-            <LuCheck className="size-4" /> Borrowed
-          </>
-        ) : (
-          <>
-            <LuBookmarkPlus className="size-4" /> Borrow
-          </>
-        )}
-      </button>
+      <BorrowButton
+        bookId={book.id}
+        bookTitle={book.title}
+        status={borrowStatus}
+        available={available}
+        limitReached={borrowLimitReached}
+        isAuthenticated={isAuthenticated}
+        label="Borrow"
+        className="mt-4"
+        onBorrowed={onBorrowed}
+      />
     </article>
   );
 };

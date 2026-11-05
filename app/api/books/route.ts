@@ -13,9 +13,16 @@ import {
   sql,
 } from "drizzle-orm";
 import type { estypes } from "@elastic/elasticsearch";
+import { auth } from "@/auth";
 import { db } from "@/database/drizzle";
+import {
+  countActiveReceipts,
+  getActiveBorrowStates,
+  sweepReceiptStatuses,
+} from "@/database/receipts";
 import { books } from "@/database/schema";
 import { BOOKS_INDEX, elasticsearch } from "@/lib/elasticsearch";
+import type { ActiveBorrowStates } from "@/types/receipt";
 
 const PAGE_SIZE = 12;
 const MAX_SEARCH_RESULTS = 10_000;
@@ -143,6 +150,10 @@ export async function GET(request: NextRequest) {
       }
     })();
 
+    // Trước khi đọc số lượng khả dụng, đồng bộ các phiếu đã hết hạn nhận hoặc
+    // quá hạn trả để tồn kho và nút Borrow không bị cũ.
+    await sweepReceiptStatuses();
+
     // 4. Phân trang và đếm tổng sau khi đã áp dụng
     // từ khóa tìm kiếm cùng tất cả bộ lọc.
     const itemsQuery = db.select().from(books).where(whereClause);
@@ -160,13 +171,36 @@ export async function GET(request: NextRequest) {
 
     const total = Number(totalResult[0]?.total ?? 0);
 
-    return NextResponse.json({
-      items,
-      page,
-      pageSize: limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    });
+    // Trạng thái phiếu của người đang xem cho đúng những cuốn trong trang này,
+    // kèm số cuốn đang giữ để áp giới hạn mượn ở client.
+    const session = await auth();
+    const viewerId = session?.user?.id ?? null;
+
+    let borrowStates: ActiveBorrowStates = {};
+    let activeBorrowCount = 0;
+
+    if (viewerId) {
+      [borrowStates, activeBorrowCount] = await Promise.all([
+        getActiveBorrowStates(
+          viewerId,
+          items.map((item) => item.id),
+        ),
+        countActiveReceipts(viewerId),
+      ]);
+    }
+
+    return NextResponse.json(
+      {
+        items,
+        page,
+        pageSize: limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        borrowStates,
+        activeBorrowCount,
+      },
+      { headers: { "Cache-Control": "no-store" } },
+    );
   } catch (error) {
     console.error("Failed to fetch books:", error);
 

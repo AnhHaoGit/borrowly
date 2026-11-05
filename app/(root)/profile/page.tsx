@@ -1,140 +1,121 @@
-import Image from "next/image";
-// Khi nối DB thật thì đổi thành "@/database/queries"
-import {
-  getUserById,
-  getRentedBooksByUserId,
-  type RentedBook,
-} from "@/database/queries.mock";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { LuBookOpen, LuReceipt } from "react-icons/lu";
+import { auth } from "@/auth";
+import ProfileCard from "@/components/profile/ProfileCard";
+import ReceiptCard from "@/components/profile/ReceiptCard";
+import { getReceiptsByUserId, sweepReceiptStatuses } from "@/database/receipts";
+import { getUserProfile } from "@/database/users";
 
-const CURRENT_USER_ID = "alice";
+export const metadata: Metadata = { title: "Profile" };
 
-const THEME = {
-  page: "bg-[#fbf7e8]",
-  card: "bg-[#f5d0c6] rounded-2xl shadow-sm",
-  cardHover: "hover:shadow-md transition-shadow duration-200",
-  cover: "bg-[#e8beba] rounded-xl",
-  title: "text-[#62202f]",
-  text: "text-[#62202f]/80",
-  accent: "border-[#62202f]",
-};
-
-function formatDate(date: string | Date): string {
-  return new Date(date).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-}
-
-// Thẻ sách: Bìa sách rộng toàn bộ mặt trước, tối ưu không gian thẻ
-function BookCard({ book }: { book: RentedBook }) {
-  const overdue = book.status === "OVERDUE";
-
-  return (
-    <li className={`${THEME.card} ${THEME.cardHover} p-3 flex flex-col h-full`}>
-      {/* Cover image prominently displayed at the front (full width) */}
-      <div
-        className={`relative aspect-[2/3] w-full mb-3 overflow-hidden shadow-sm ${THEME.cover}`}
-      >
-        <Image
-          src={book.coverUrl}
-          alt={`Cover of ${book.title}`}
-          fill
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 200px"
-          className="object-cover scale-[1.15] -translate-x-[7%]"
-        />
-      </div>
-
-      <div className="flex flex-col flex-grow justify-between">
-        <div>
-          <h3 className={`text-base font-bold leading-tight line-clamp-2 ${THEME.title}`}>
-            {book.title}
-          </h3>
-
-          <p className={`mt-0.5 text-xs font-medium ${THEME.text}`}>
-            {book.authorName}
-          </p>
-        </div>
-
-        {/* Dynamic due date stuck cleanly to the bottom */}
-        {book.dueDate && (
-          <div className="mt-3 border-t border-[#62202f]/15 pt-2">
-            <p
-              className={`text-[10px] font-semibold uppercase tracking-wider ${
-                overdue ? "text-red-700" : THEME.text
-              }`}
-            >
-              {overdue ? "Overdue since" : "Due"}
-            </p>
-            <p className={`text-xs font-medium ${overdue ? "text-red-700 font-bold" : THEME.text}`}>
-              {formatDate(book.dueDate)}
-            </p>
-          </div>
-        )}
-      </div>
-    </li>
-  );
-}
+// Trang đọc phiên đăng nhập + dữ liệu riêng của người dùng nên không thể prerender.
+export const instant = false;
 
 export default async function ProfilePage() {
-  const user = await getUserById(CURRENT_USER_ID);
+  const session = await auth();
+  const userId = session?.user?.id;
+
+  if (!userId) {
+    redirect("/sign-in");
+  }
+
+  // Phiếu quá 2 ngày không nhận / quá hạn trả phải hiện đúng trạng thái ngay khi
+  // mở trang, không cần admin thao tác.
+  await sweepReceiptStatuses();
+
+  const [user, receipts] = await Promise.all([
+    getUserProfile(userId),
+    getReceiptsByUserId(userId),
+  ]);
 
   if (!user) {
     return (
-      <div className={`min-h-[60vh] ${THEME.page} flex items-center justify-center`}>
-        <p className={THEME.text}>We couldn&apos;t find your profile yet.</p>
-      </div>
+      <section className="mx-auto flex min-h-[50vh] w-full max-w-6xl flex-col items-center justify-center gap-4 px-4 text-center sm:px-6">
+        <h1 className="text-3xl font-bold text-primary">
+          We couldn&apos;t find your profile
+        </h1>
+        <p className="max-w-md text-sm text-muted">
+          Your session is still valid but this account no longer exists. Please
+          sign in again.
+        </p>
+        <Link
+          href="/sign-in"
+          className="rounded-full border border-primary bg-primary px-6 py-2.5 text-sm text-background transition hover:bg-secondary"
+        >
+          Sign in
+        </Link>
+      </section>
     );
   }
 
-  const rentedBooks = await getRentedBooksByUserId(user.id);
-
   return (
-    <div className={`min-h-[60vh] ${THEME.page}`}>
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
-        {/* Compact grid layout for profile sidebar & book section */}
-        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6 items-start">
-          
-          {/* Profile Details Sidebar */}
-          <aside
-            aria-label="Profile information"
-            className={`${THEME.card} p-4 flex flex-row lg:flex-col items-center text-left lg:text-center gap-4 lg:sticky lg:top-20`}
-          >
-            <Image
-              src="/Avatar.png"
-              alt={`${user.fullName}'s avatar`}
-              width={72}
-              height={72}
-              className={`rounded-full object-cover border-2 shrink-0 ${THEME.accent}`}
-            />
-            <div className="min-w-0 w-full">
-              <h1 className={`text-lg font-bold break-words leading-tight ${THEME.title}`}>
-                {user.fullName}
-              </h1>
-              <p className={`text-xs mt-0.5 break-all ${THEME.text}`}>{user.email}</p>
-            </div>
-          </aside>
+    <div className="mx-auto w-full max-w-6xl px-4 pb-20 pt-8 sm:px-6">
+      <header className="mb-8">
+        <h1 className="text-3xl font-bold leading-tight text-primary md:text-4xl">
+          Your profile
+        </h1>
+        <p className="mt-1.5 text-sm text-muted">
+          Your account details and every borrowing receipt you created.
+        </p>
+      </header>
 
-          {/* Borrowed Books Section */}
-          <section>
-            <h2 className={`text-xl font-bold mb-3 ${THEME.title}`}>
-              Borrowed Books
-            </h2>
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
+        <ProfileCard user={user} />
 
-            {rentedBooks.length === 0 ? (
-              <p className={`text-sm ${THEME.text}`}>
-                You have yet to rent any books
+        <section aria-labelledby="receipts-heading" className="min-w-0 space-y-4">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2
+                id="receipts-heading"
+                className="text-2xl font-bold text-primary"
+              >
+                Receipts
+              </h2>
+              <p className="mt-1 text-sm text-muted">
+                {receipts.length === 0
+                  ? "Nothing borrowed yet."
+                  : `${receipts.length} ${receipts.length === 1 ? "receipt" : "receipts"} · active first`}
               </p>
-            ) : (
-              <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-3.5">
-                {rentedBooks.map((book) => (
-                  <BookCard key={book.receiptId} book={book} />
-                ))}
-              </ul>
-            )}
-          </section>
-        </div>
+            </div>
+
+            <Link
+              href="/books"
+              className="text-sm text-secondary underline-offset-2 hover:text-primary hover:underline"
+            >
+              Browse books
+            </Link>
+          </div>
+
+          {receipts.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-accent-deep/70 bg-surface/60 px-6 py-14 text-center">
+              <span className="grid size-14 place-items-center rounded-full bg-accent text-primary">
+                <LuReceipt className="size-6" />
+              </span>
+              <p className="text-lg font-bold text-primary">No receipts yet</p>
+              <p className="max-w-sm text-sm text-muted">
+                When you borrow a book, its receipt appears here with the pickup
+                deadline, due date and status.
+              </p>
+              <Link
+                href="/books"
+                className="mt-1 inline-flex items-center gap-2 rounded-full border border-primary bg-primary px-5 py-2.5 text-sm text-background transition hover:bg-secondary"
+              >
+                <LuBookOpen className="size-4" />
+                Find a book
+              </Link>
+            </div>
+          ) : (
+            <ul className="space-y-4">
+              {receipts.map((receipt) => (
+                <li key={receipt.id}>
+                  <ReceiptCard receipt={receipt} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
     </div>
   );

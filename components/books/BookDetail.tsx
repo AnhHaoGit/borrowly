@@ -4,19 +4,19 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import type { Book } from "@/types/book";
-import { notify } from "@/lib/toast";
+import type { BorrowStatus } from "@/types/ticket";
+import { BORROW_LIMIT } from "@/lib/receipts";
 import BookCard from "./BookCard";
 import BookReviews from "./BookReviews";
+import BorrowButton from "./BorrowButton";
 import { StarRating } from "@/components/ui/StarRating";
 import { getLanguageName } from "@/lib/languages";
 import type { ReviewState } from "@/types/review";
 import {
   LuArrowLeft,
   LuBookOpen,
-  LuBookmarkPlus,
   LuBuilding2,
   LuCalendarDays,
-  LuCheck,
   LuClock,
   LuGlobe,
   LuHash,
@@ -31,6 +31,9 @@ interface Props {
   similarBooks: Book[];
   reviewState: ReviewState;
   viewerId: string | null;
+  // Trạng thái phiếu người xem đang giữ, theo bookId, để nút Borrow hiển thị đúng.
+  borrowStates: Record<string, BorrowStatus>;
+  activeBorrowCount: number;
 }
 
 const DESCRIPTION_PREVIEW_CHARS = 480;
@@ -122,39 +125,21 @@ const ExpandableList = ({
   );
 };
 
-const BookDetail = ({ book, similarBooks, reviewState, viewerId }: Props) => {
+const BookDetail = ({
+  book,
+  similarBooks,
+  reviewState,
+  viewerId,
+  borrowStates,
+  activeBorrowCount,
+}: Props) => {
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
-  const [isBorrowed, setIsBorrowed] = useState(false);
-  const [borrowedIds, setBorrowedIds] = useState<Set<string>>(new Set());
 
-  const outOfStock = book.availableQuantity <= 0;
-  const remaining = book.availableQuantity - (isBorrowed ? 1 : 0);
+  const remaining = book.availableQuantity;
+  const limitReached = activeBorrowCount >= BORROW_LIMIT;
+  const isAuthenticated = Boolean(viewerId);
   const hasLongDescription =
     book.description.length > DESCRIPTION_PREVIEW_CHARS;
-
-  const toggleSimilarBorrow = (id: string) => {
-    const target = similarBooks.find((item) => item.id === id);
-    if (!target) return;
-
-    const adding = !borrowedIds.has(id);
-
-    setBorrowedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-
-    if (adding) {
-      notify.success("Added to your borrow list", {
-        description: target.title,
-      });
-    } else {
-      notify.info("Removed from your borrow list", {
-        description: target.title,
-      });
-    }
-  };
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pb-20 pt-8 sm:px-6">
@@ -198,36 +183,19 @@ const BookDetail = ({ book, similarBooks, reviewState, viewerId }: Props) => {
               />
               {remaining > 0
                 ? `${remaining} ${remaining === 1 ? "copy" : "copies"} available`
-                : outOfStock
-                  ? "Currently out of stock"
-                  : "All copies reserved"}
+                : "Currently out of stock"}
             </p>
 
-            <button
-              type="button"
-              disabled={outOfStock}
-              aria-pressed={isBorrowed}
-              onClick={() => setIsBorrowed((prev) => !prev)}
-              className={`inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border text-sm transition ${
-                outOfStock
-                  ? "cursor-not-allowed border-accent bg-accent/30 text-muted/70"
-                  : isBorrowed
-                    ? "border-primary bg-secondary text-background hover:bg-primary"
-                    : "border-primary bg-primary text-background hover:bg-secondary"
-              }`}
-            >
-              {outOfStock ? (
-                "Unavailable"
-              ) : isBorrowed ? (
-                <>
-                  <LuCheck className="size-4" /> Borrowed
-                </>
-              ) : (
-                <>
-                  <LuBookmarkPlus className="size-4" /> Borrow this book
-                </>
-              )}
-            </button>
+            <BorrowButton
+              bookId={book.id}
+              bookTitle={book.title}
+              status={borrowStates[book.id] ?? null}
+              available={book.availableQuantity > 0}
+              limitReached={limitReached}
+              isAuthenticated={isAuthenticated}
+              label="Borrow this book"
+              size="md"
+            />
           </div>
         </div>
 
@@ -421,8 +389,9 @@ const BookDetail = ({ book, similarBooks, reviewState, viewerId }: Props) => {
               <li key={item.id}>
                 <BookCard
                   book={item}
-                  borrowed={borrowedIds.has(item.id)}
-                  onToggle={toggleSimilarBorrow}
+                  borrowStatus={borrowStates[item.id] ?? null}
+                  borrowLimitReached={limitReached}
+                  isAuthenticated={isAuthenticated}
                 />
               </li>
             ))}

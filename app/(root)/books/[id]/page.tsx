@@ -7,6 +7,11 @@ import BookDetail from "@/components/books/BookDetail";
 import { PageLoader } from "@/components/ui/Loader";
 import { db } from "@/database/drizzle";
 import { books } from "@/database/schema";
+import {
+  countActiveReceipts,
+  getActiveBorrowStates,
+  sweepReceiptStatuses,
+} from "@/database/receipts";
 import { getReviewState } from "@/database/reviews";
 
 // Trang cần `params` + dữ liệu database trước khi trả lời, nên cho phép route
@@ -55,16 +60,22 @@ async function BookDetailContent({ id }: { id: string }) {
   const session = await auth();
   const viewerId = session?.user?.id ?? null;
 
-  // Sách cùng thể loại, ưu tiên sách được mượn nhiều.
-  const [similarBooks, reviewState] = await Promise.all([
-    db
-      .select()
-      .from(books)
-      .where(and(eq(books.genre, book.genre), ne(books.id, book.id)))
-      .orderBy(desc(books.borrowCount), asc(books.title))
-      .limit(SIMILAR_LIMIT),
-    getReviewState(book.id, viewerId),
-  ]);
+  // Sách cùng thể loại, ưu tiên sách được mượn nhiều; kèm trạng thái phiếu của
+  // người đang xem để nút Borrow hiển thị đúng.
+  const [similarBooks, reviewState, borrowStates, activeBorrowCount] =
+    await Promise.all([
+      db
+        .select()
+        .from(books)
+        .where(and(eq(books.genre, book.genre), ne(books.id, book.id)))
+        .orderBy(desc(books.borrowCount), asc(books.title))
+        .limit(SIMILAR_LIMIT),
+      getReviewState(book.id, viewerId),
+      viewerId
+        ? getActiveBorrowStates(viewerId)
+        : Promise.resolve<Record<string, never>>({}),
+      viewerId ? countActiveReceipts(viewerId) : Promise.resolve(0),
+    ]);
 
   return (
     <BookDetail
@@ -72,6 +83,8 @@ async function BookDetailContent({ id }: { id: string }) {
       similarBooks={similarBooks}
       reviewState={reviewState}
       viewerId={viewerId}
+      borrowStates={borrowStates}
+      activeBorrowCount={activeBorrowCount}
     />
   );
 }
@@ -82,6 +95,10 @@ export default async function BookDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+
+  // Đồng bộ trạng thái phiếu (hết hạn nhận / quá hạn trả) trước khi đọc sách để
+  // số lượng khả dụng hiển thị đúng.
+  await sweepReceiptStatuses();
 
   // Kiểm tra sách tồn tại trước khi stream nội dung để 404 vẫn đúng status.
   await getBook(id);
