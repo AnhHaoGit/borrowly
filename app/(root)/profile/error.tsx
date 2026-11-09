@@ -2,7 +2,7 @@
 
 export default function Error({ reset }: { reset: () => void }) {
   return (
-    <main className="mx-auto flex min-h-[50vh] w-full max-w-6xl flex-col items-center justify-center gap-4 px-4 text-center sm:px-6">
+    <main className="mx-auto flex min-h-[50vh] w-full max-w-7xl flex-col items-center justify-center gap-4 px-4 text-center sm:px-6">
       <h1 className="text-2xl font-bold text-primary">
         Something went wrong loading your profile
       </h1>

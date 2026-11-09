@@ -142,7 +142,7 @@ const BookDetail = ({
     book.description.length > DESCRIPTION_PREVIEW_CHARS;
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 pb-20 pt-8 sm:px-6">
+    <div className="mx-auto w-full max-w-7xl px-4 pb-20 pt-8 sm:px-6">
       <Link
         href="/books"
         className="inline-flex items-center gap-2 rounded-full border border-accent bg-surface px-4 py-2 text-sm text-secondary transition hover:border-secondary hover:text-primary"

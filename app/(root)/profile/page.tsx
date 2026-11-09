@@ -32,7 +32,7 @@ export default async function ProfilePage() {
 
   if (!user) {
     return (
-      <section className="mx-auto flex min-h-[50vh] w-full max-w-6xl flex-col items-center justify-center gap-4 px-4 text-center sm:px-6">
+      <section className="mx-auto flex min-h-[50vh] w-full max-w-7xl flex-col items-center justify-center gap-4 px-4 text-center sm:px-6">
         <h1 className="text-3xl font-bold text-primary">
           We couldn&apos;t find your profile
         </h1>
@@ -51,7 +51,7 @@ export default async function ProfilePage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 pb-20 pt-8 sm:px-6">
+    <div className="mx-auto w-full max-w-7xl px-4 pb-20 pt-8 sm:px-6">
       <header className="mb-8">
         <h1 className="text-3xl font-bold leading-tight text-primary md:text-4xl">
           Your profile

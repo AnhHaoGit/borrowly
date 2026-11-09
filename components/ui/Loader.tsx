@@ -62,7 +62,7 @@ const Loader = ({ label, size = "md", className = "" }: LoaderProps) => {
 
 export const PageLoader = ({ label = "Loading…" }: { label?: string }) => {
   return (
-    <div className="mx-auto flex min-h-[50vh] w-full max-w-6xl items-center justify-center px-4 py-16">
+    <div className="mx-auto flex min-h-[50vh] w-full max-w-7xl items-center justify-center px-4 py-16">
       <Loader size="lg" label={label} />
     </div>
   );

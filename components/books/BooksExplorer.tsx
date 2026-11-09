@@ -47,13 +47,17 @@ const BooksExplorer = ({ genres }: Props) => {
   const [error, setError] = useState<string | null>(null);
 
   // Trạng thái phiếu người xem đang giữ, do API trả về cùng danh sách sách.
-  const [borrowStates, setBorrowStates] = useState<Record<string, BorrowStatus>>(
-    {},
-  );
+  const [borrowStates, setBorrowStates] = useState<
+    Record<string, BorrowStatus>
+  >({});
   const [activeBorrowCount, setActiveBorrowCount] = useState(0);
 
   const resultsRef = useRef<HTMLDivElement>(null);
-  const { status } = useSession();
+  const { data, status } = useSession();
+
+  const user = data?.user;
+
+  console.log("BooksExplorer user:", user);
 
   const isAuthenticated = status === "authenticated";
   const borrowLimitReached = activeBorrowCount >= BORROW_LIMIT;
@@ -177,7 +181,7 @@ const BooksExplorer = ({ genres }: Props) => {
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 px-4 pb-20 pt-8 sm:px-6">
+    <div className="mx-auto w-full max-w-7xl space-y-6 px-4 pb-20 pt-8 sm:px-6">
       <h1 className="sr-only">Books</h1>
 
       <SearchBar

@@ -23,7 +23,7 @@ const EXPLORE = [
 const Footer = () => {
   return (
     <footer className="border-t border-accent/70 bg-linear-to-b from-background to-accent">
-      <div className="mx-auto grid max-w-6xl gap-10 px-6 py-14 md:grid-cols-[1.6fr_1fr_1fr]">
+      <div className="mx-auto grid max-w-7xl gap-10 px-6 py-14 md:grid-cols-[1.6fr_1fr_1fr]">
         {/* Brand */}
         <div>
           <Link href="/books" className="inline-flex items-center gap-2.5">

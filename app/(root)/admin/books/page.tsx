@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import BooksExplorer from "@/components/admin/BooksExplorer";
+import AdminBooksExplorer from "@/components/admin/AdminBooksExplorer";
+import { GENRES } from "@/database/books";
 
 export const metadata: Metadata = { title: "Admin Books" };
 
-const BooksPage = () => {
-  return <BooksExplorer/>;
+const AdminBooksPage = () => {
+  return <AdminBooksExplorer genres={GENRES} />;
 };
 
-export default BooksPage;
+export default AdminBooksPage;

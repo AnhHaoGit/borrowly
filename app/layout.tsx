@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 
-import Navbar from "../components/layout/NavBar";
+import Sidebar from "../components/layout/SideBar";
 import Footer from "../components/layout/Footer";
 import Providers from "@/components/layout/Providers";
 
@@ -36,11 +36,15 @@ export const metadata: Metadata = {
 const RootLayout = ({ children }: LayoutProps<"/">) => {
   return (
     <html lang="en" className={`${bonaNova.variable} h-full`}>
-      <body className="flex min-h-full flex-col">
+      <body className="min-h-full bg-background">
         <Providers>
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          <Footer />
+          {/* Navbar dọc: cố định bên trái trên desktop, thanh mở menu trên mobile */}
+          <Sidebar />
+
+          <div className="flex min-h-screen flex-col md:pl-72">
+            <main className="min-w-0 flex-1">{children}</main>
+            <Footer />
+          </div>
         </Providers>
       </body>
     </html>

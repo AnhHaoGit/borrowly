@@ -25,7 +25,7 @@ const TagInput = ({ id, values, onChange, max, placeholder }: Props) => {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" || e.key === ",") {
+    if (e.key === "Enter") {
       e.preventDefault();
       commit();
     } else if (e.key === "Backspace" && !draft && values.length > 0) {
@@ -64,7 +64,7 @@ const TagInput = ({ id, values, onChange, max, placeholder }: Props) => {
         />
       </div>
       <p className="mt-1 text-xs text-muted">
-        {values.length}/{max} · Press Enter or comma to add
+        {values.length}/{max} · Press Enter to add
       </p>
     </div>
   );
