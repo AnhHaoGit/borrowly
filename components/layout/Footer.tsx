@@ -17,7 +17,7 @@ const SOCIALS = [
 
 const EXPLORE = [
   { href: "/books", label: "Books" },
-  { href: "/receipts", label: "Receipts" },
+  { href: "/profile", label: "Profile" },
 ];
 
 const Footer = () => {
