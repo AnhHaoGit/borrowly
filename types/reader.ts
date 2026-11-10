@@ -9,3 +9,9 @@ export interface Reader {
   lastActivityDate: string | null; // drizzle `date` columns come back as "YYYY-MM-DD" strings
   createdAt: Date;
 }
+
+// Người dùng kèm số phiếu, để trang admin thấy ngay ai đang giữ sách.
+export interface ReaderWithStats extends Reader {
+  activeReceipts: number; // PENDING + BORROWED + OVERDUE
+  totalReceipts: number;
+}

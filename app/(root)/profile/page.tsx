@@ -7,6 +7,7 @@ import ProfileCard from "@/components/profile/ProfileCard";
 import ReceiptCard from "@/components/profile/ReceiptCard";
 import { getReceiptsByUserId, sweepReceiptStatuses } from "@/database/receipts";
 import { getUserProfile } from "@/database/users";
+import { groupReceipts } from "@/lib/receipts";
 
 export const metadata: Metadata = { title: "Profile" };
 
@@ -50,6 +51,30 @@ export default async function ProfilePage() {
     );
   }
 
+  // Tách phiếu theo việc còn phải làm: nhận sách, trả sách, hay đã xong.
+  // Trong mỗi nhóm, phiếu cận hạn nhất đứng đầu.
+  const groups = groupReceipts(receipts);
+  const sections = [
+    {
+      key: "pickup",
+      title: "Waiting for pickup",
+      hint: "Pick these up within 2 days or the receipt expires.",
+      items: groups.pickup,
+    },
+    {
+      key: "shelf",
+      title: "On loan",
+      hint: "Sorted by due date — soonest first.",
+      items: groups.shelf,
+    },
+    {
+      key: "history",
+      title: "Closed receipts",
+      hint: "Returned or cancelled, newest first.",
+      items: groups.history,
+    },
+  ].filter((section) => section.items.length > 0);
+
   return (
     <div className="mx-auto w-full max-w-7xl px-4 pb-20 pt-8 sm:px-6">
       <header className="mb-8">
@@ -76,7 +101,7 @@ export default async function ProfilePage() {
               <p className="mt-1 text-sm text-muted">
                 {receipts.length === 0
                   ? "Nothing borrowed yet."
-                  : `${receipts.length} ${receipts.length === 1 ? "receipt" : "receipts"} · active first`}
+                  : `${receipts.length} ${receipts.length === 1 ? "receipt" : "receipts"} · soonest deadline first`}
               </p>
             </div>
 
@@ -107,13 +132,35 @@ export default async function ProfilePage() {
               </Link>
             </div>
           ) : (
-            <ul className="space-y-4">
-              {receipts.map((receipt) => (
-                <li key={receipt.id}>
-                  <ReceiptCard receipt={receipt} />
-                </li>
+            <div className="space-y-8">
+              {sections.map((section) => (
+                <section
+                  key={section.key}
+                  aria-labelledby={`receipts-${section.key}`}
+                >
+                  <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                    <h3
+                      id={`receipts-${section.key}`}
+                      className="flex items-center gap-2 text-lg font-bold text-primary"
+                    >
+                      {section.title}
+                      <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-bold text-secondary">
+                        {section.items.length}
+                      </span>
+                    </h3>
+                    <p className="text-xs text-muted">{section.hint}</p>
+                  </div>
+
+                  <ul className="space-y-4">
+                    {section.items.map((receipt) => (
+                      <li key={receipt.id}>
+                        <ReceiptCard receipt={receipt} />
+                      </li>
+                    ))}
+                  </ul>
+                </section>
               ))}
-            </ul>
+            </div>
           )}
         </section>
       </div>

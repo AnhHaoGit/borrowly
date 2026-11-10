@@ -1,134 +1,184 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { LuChevronDown } from "react-icons/lu";
-import { notify } from "@/lib/toast";
-import { type Ticket, type TicketWithDetails, type BorrowStatus } from "@/types/ticket";
+import { LuChevronDown, LuLoader } from "react-icons/lu";
+import { STATUS_ORDER, STATUS_VIEW } from "@/components/admin/ticket-status";
+import { daysUntil, formatCalendarDate, formatTimestamp } from "@/lib/date";
+import { getPickupDeadline } from "@/lib/receipts";
+import type { BorrowStatus, TicketWithDetails } from "@/types/ticket";
 
 interface Props {
-  tickets: Ticket[];
+  tickets: TicketWithDetails[];
+  savingId: string | null;
+  onStatusChange: (ticket: TicketWithDetails, status: BorrowStatus) => void;
 }
 
-// 6 columns on md+; on mobile each row becomes a stacked card
-const GRID = "md:grid md:grid-cols-[0.9fr_1.1fr_1.4fr_1.2fr_1.1fr_1.5fr]";
-const HEADERS = ["Ticket ID", "Reader", "Book", "Borrow date", "Due date"];
+// 6 cột trên md+; trên mobile mỗi dòng là một thẻ xếp dọc.
+const GRID = "md:grid md:grid-cols-[0.8fr_1.3fr_1.6fr_1fr_1fr_1.2fr]";
+const HEADERS = ["Receipt", "Reader", "Book", "Requested", "Deadline", "Status"];
 
-const statusView = (status: BorrowStatus) => {
-  switch (status) {
-    case "PENDING":
-      return { label: "Pending", className: "bg-amber-100 text-amber-700" };
-    case "BORROWED":
-      return { label: "Borrowed", className: "bg-sky-100 text-sky-700" };
-    case "RETURNED":
-      return { label: "Returned", className: "bg-green-100 text-green-800" };
-    case "OVERDUE":
-      return { label: "Overdue", className: "bg-red-100 text-red-700" };
-    case "EXPIRED":
-      return { label: "Expired", className: "bg-orange-100 text-orange-700" };
-    default:
-      // Safety net for a value the app doesn't know about
-      return { label: "Unknown", className: "bg-gray-200 text-gray-700" };
-  }
-};
-
-interface CellProps {
+const Cell = ({
+  label,
+  children,
+  className = "",
+}: {
   label: string;
   children: ReactNode;
   className?: string;
-}
-
-const Cell = ({ label, children, className = "" }: CellProps) => (
+}) => (
   <div
     role="cell"
-    className={`flex items-center justify-between gap-4 border-b border-accent-deep/20 px-4 py-2.5 last:border-b-0 md:justify-center md:border-b-0 md:border-l md:border-accent-deep/40 md:px-3 md:py-6 md:text-center md:first:border-l-0 ${className}`}
+    className={`flex items-center justify-between gap-4 border-b border-accent-deep/20 px-4 py-2.5 last:border-b-0 md:justify-center md:border-b-0 md:border-l md:border-accent-deep/40 md:px-3 md:py-4 md:text-center md:first:border-l-0 ${className}`}
   >
-    <span className="text-xs text-muted md:hidden">{label}</span>
+    <span className="shrink-0 text-xs text-muted md:hidden">{label}</span>
     <span className="min-w-0 break-words text-right md:text-center">
       {children}
     </span>
   </div>
 );
 
-const TicketsTable = ({ tickets }: Props) => {
-  const handleFilterStatus = () => {
-    // TODO: open a dropdown to filter/sort by time status (due today, overdue, ...)
-    notify.info("Status filter isn't connected yet");
-  };
+/**
+ * Cột "Deadline": phiếu chờ nhận thì là hạn đến nhận (2 ngày), phiếu đã mượn
+ * thì là hạn trả kèm số ngày còn lại / quá hạn.
+ */
+const deadlineView = (ticket: TicketWithDetails) => {
+  if (ticket.status === "PENDING") {
+    const deadline = getPickupDeadline(ticket.createdAt);
+    const days = Math.ceil((deadline.getTime() - Date.now()) / 86_400_000);
 
+    return {
+      value: formatTimestamp(deadline),
+      note:
+        days <= 0
+          ? "Pickup window closing"
+          : `Pick up in ${days} ${days === 1 ? "day" : "days"}`,
+      danger: days <= 0,
+    };
+  }
+
+  if (ticket.status === "RETURNED" || ticket.status === "EXPIRED") {
+    return {
+      value: ticket.returnDate ? formatCalendarDate(ticket.returnDate) : "—",
+      note:
+        ticket.status === "RETURNED" ? "Returned" : "Pickup window passed",
+      danger: false,
+    };
+  }
+
+  const days = daysUntil(ticket.dueDate);
+
+  return {
+    value: ticket.dueDate ? formatCalendarDate(ticket.dueDate) : "—",
+    note:
+      days === null
+        ? ""
+        : days < 0
+          ? `${-days} ${-days === 1 ? "day" : "days"} overdue`
+          : days === 0
+            ? "Due today"
+            : `${days} ${days === 1 ? "day" : "days"} left`,
+    danger: days !== null && days <= 0,
+  };
+};
+
+const TicketsTable = ({ tickets, savingId, onStatusChange }: Props) => {
   return (
     <div role="table" aria-label="Borrow tickets" className="text-primary">
-      {/* Header row (md+) */}
+      {/* Hàng tiêu đề (md+) */}
       <div
         role="row"
-        className={`hidden overflow-hidden rounded-2xl border-2 border-accent-deep bg-accent text-sm font-bold ${GRID}`}
+        className={`hidden overflow-hidden rounded-2xl border-2 border-accent-deep bg-accent text-sm font-bold md:grid ${GRID}`}
       >
-        {HEADERS.map((h) => (
+        {HEADERS.map((header) => (
           <div
-            key={h}
+            key={header}
             role="columnheader"
             className="border-l border-accent-deep/40 px-3 py-3 text-center first:border-l-0"
           >
-            {h}
+            {header}
           </div>
         ))}
-        <div
-          role="columnheader"
-          className="relative border-l border-accent-deep/40 px-3 py-3 text-center"
-        >
-          Status
-          <button
-            type="button"
-            onClick={handleFilterStatus}
-            aria-label="Filter by time status"
-            className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-full bg-surface text-primary transition hover:bg-surface/70"
-          >
-            <LuChevronDown className="size-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile-only filter button, since the header row is hidden */}
-      <div className="mb-3 flex justify-end md:hidden">
-        <button
-          type="button"
-          onClick={handleFilterStatus}
-          className="inline-flex items-center gap-1.5 rounded-full border-2 border-accent-deep bg-accent px-4 py-1.5 text-sm font-bold text-primary transition hover:bg-accent-deep"
-        >
-          Time status
-          <LuChevronDown className="size-4" />
-        </button>
       </div>
 
       <div className="flex flex-col gap-4 md:mt-4">
-        {tickets.map((t) => {
-          const status = statusView(t.status);
+        {tickets.map((ticket) => {
+          const deadline = deadlineView(ticket);
+          const saving = savingId === ticket.id;
+
           return (
             <div
-              key={t.id}
+              key={ticket.id}
               role="row"
-              className={`flex flex-col overflow-hidden rounded-2xl border border-accent-deep/40 bg-surface shadow-soft ${GRID}`}
+              className={`flex flex-col overflow-hidden rounded-2xl border border-accent-deep/40 bg-surface shadow-soft transition hover:border-accent-deep md:items-center ${GRID}`}
             >
-              <Cell label="Ticket ID" className="text-base font-bold">
-                {t.id}
+              <Cell label="Receipt" className="text-sm font-bold">
+                #{ticket.id.slice(0, 8)}
               </Cell>
-              <Cell label="Reader" className="text-sm font-bold">
-                {/*t.reader*/"WIP"}
-              </Cell>
-              <Cell label="Book" className="text-sm leading-snug">
-                {/*t.book*/"WIP"}
-              </Cell>
-              <Cell label="Borrow date" className="text-sm">
-                {/*t.borrowDate*/"WIP"}
-              </Cell>
-              <Cell label="Due date" className="text-sm">
-                {t.dueDate}
-              </Cell>
-              <Cell label="Time status">
-                <span
-                  className={`inline-block rounded-full px-3 py-1 text-xs font-bold ${status.className}`}
-                >
-                  {status.label}
+
+              <Cell label="Reader">
+                <span className="block truncate text-sm font-bold">
+                  {ticket.reader.fullName}
                 </span>
+                <span className="block truncate text-xs text-muted">
+                  {ticket.reader.email}
+                </span>
+              </Cell>
+
+              <Cell label="Book">
+                <span className="block line-clamp-2 text-sm font-bold leading-snug">
+                  {ticket.book.title}
+                </span>
+                <span className="block truncate text-xs text-muted">
+                  {ticket.book.authorName}
+                </span>
+              </Cell>
+
+              <Cell label="Requested" className="text-sm">
+                {formatTimestamp(ticket.createdAt)}
+              </Cell>
+
+              <Cell label="Deadline" className="text-sm">
+                <span className={deadline.danger ? "font-bold text-danger" : ""}>
+                  {deadline.value}
+                </span>
+                {deadline.note && (
+                  <span
+                    className={`block text-xs ${
+                      deadline.danger ? "text-danger" : "text-muted"
+                    }`}
+                  >
+                    {deadline.note}
+                  </span>
+                )}
+              </Cell>
+
+              <Cell label="Status">
+                <div className="relative w-full max-w-[11rem]">
+                  <select
+                    value={ticket.status}
+                    disabled={saving}
+                    onChange={(event) =>
+                      onStatusChange(
+                        ticket,
+                        event.target.value as BorrowStatus,
+                      )
+                    }
+                    aria-label={`Status for ${ticket.book.title}`}
+                    className={`h-9 w-full cursor-pointer appearance-none rounded-full border px-3 pr-8 text-xs font-bold outline-none transition focus:ring-4 focus:ring-accent/60 disabled:cursor-wait disabled:opacity-70 ${STATUS_VIEW[ticket.status].badge}`}
+                  >
+                    {STATUS_ORDER.map((status) => (
+                      <option key={status} value={status}>
+                        {STATUS_VIEW[status].label}
+                      </option>
+                    ))}
+                  </select>
+
+                  {saving ? (
+                    <LuLoader className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 animate-spin" />
+                  ) : (
+                    <LuChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2" />
+                  )}
+                </div>
               </Cell>
             </div>
           );

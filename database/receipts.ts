@@ -1,9 +1,9 @@
 import { and, count, desc, eq, gt, inArray, sql } from "drizzle-orm";
 import { db } from "@/database/drizzle";
-import { books, receipts } from "@/database/schema";
+import { books, receipts, users } from "@/database/schema";
 import { BORROW_LIMIT, PICKUP_WINDOW_DAYS, getPickupDeadline } from "@/lib/receipts";
 import type { ActiveBorrowStates, ReceiptWithBook } from "@/types/receipt";
-import type { BorrowStatus } from "@/types/ticket";
+import type { BorrowStatus, TicketWithDetails } from "@/types/ticket";
 
 // Trạng thái "còn đang giữ sách": tính vào giới hạn 10 cuốn và chặn mượn trùng.
 // RETURNED/EXPIRED là phiếu đã đóng nên không chặn gì nữa.
@@ -266,6 +266,57 @@ export const getReceiptsByUserId = async (
       publishYear: row.publishYear,
       summary: row.summary,
       coverUrl: row.coverUrl,
+    },
+  }));
+};
+
+/**
+ * Toàn bộ phiếu mượn kèm sách và người mượn, mới nhất trước — dữ liệu cho trang
+ * quản trị. Trang admin lọc/sắp xếp trên tập này nên một JOIN là đủ, không N+1.
+ */
+export const getAllReceiptsWithDetails = async (): Promise<
+  TicketWithDetails[]
+> => {
+  const rows = await db
+    .select({
+      id: receipts.id,
+      status: receipts.status,
+      borrowDate: receipts.borrowDate,
+      dueDate: receipts.dueDate,
+      returnDate: receipts.returnDate,
+      createdAt: receipts.createdAt,
+      readerId: users.id,
+      readerName: users.fullName,
+      readerEmail: users.email,
+      bookId: books.id,
+      bookTitle: books.title,
+      bookAuthor: books.authorName,
+      bookCoverUrl: books.coverUrl,
+    })
+    .from(receipts)
+    .innerJoin(users, eq(receipts.userId, users.id))
+    .innerJoin(books, eq(receipts.bookId, books.id))
+    .orderBy(desc(receipts.createdAt));
+
+  return rows.map((row) => ({
+    id: row.id,
+    readerId: row.readerId,
+    bookId: row.bookId,
+    status: row.status,
+    borrowDate: row.borrowDate,
+    dueDate: row.dueDate,
+    returnDate: row.returnDate,
+    createdAt: row.createdAt,
+    reader: {
+      id: row.readerId,
+      fullName: row.readerName,
+      email: row.readerEmail,
+    },
+    book: {
+      id: row.bookId,
+      title: row.bookTitle,
+      authorName: row.bookAuthor,
+      coverUrl: row.bookCoverUrl,
     },
   }));
 };
