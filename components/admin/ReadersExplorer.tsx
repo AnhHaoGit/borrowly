@@ -129,7 +129,7 @@ const ReadersExplorer = () => {
       {
         description:
           role === "ADMIN"
-            ? `${reader.email} can manage books and tickets after signing in again.`
+            ? `${reader.email} can manage books and tickets right away.`
             : `${reader.email} is a reader now.`,
       },
     );

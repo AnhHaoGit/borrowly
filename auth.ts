@@ -3,6 +3,7 @@ import { compare } from "bcryptjs";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { db } from "@/database/drizzle";
 import { users } from "@/database/schema";
+import { getSessionUserState } from "@/database/users";
 import { eq } from "drizzle-orm";
 import type { Role } from "@/types/reader";
 
@@ -49,9 +50,31 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (user) {
         token.id = user.id;
         token.name = user.name;
-        // Ghi role vào token để mọi layout/route kiểm tra quyền mà không phải
-        // truy vấn database ở mỗi request.
         token.role = user.role;
+      }
+
+      const userId = token.id as string | undefined;
+
+      if (!userId) return token;
+
+      try {
+        // Role trong token chỉ là ảnh chụp lúc đăng nhập. Đọc lại từ DB mỗi khi
+        // session được đọc (thanh bên, /api/auth/session, server action...) để
+        // việc cấp hoặc thu hồi quyền admin có hiệu lực mà không cần đăng nhập
+        // lại. Đây cũng là chỗ ghi nhận hoạt động gần nhất của người dùng.
+        const state = await getSessionUserState(userId);
+
+        if (state) {
+          token.role = state.role;
+        } else {
+          // Tài khoản đã bị xoá: vô hiệu hoá phiên thay vì giữ quyền cũ.
+          token.id = "";
+          token.role = "USER";
+        }
+      } catch (error) {
+        // Lỗi DB tạm thời không được đăng xuất người dùng; các trang admin và
+        // server action vẫn kiểm tra lại role từ DB nên không lọt quyền.
+        console.error("Failed to refresh session role:", error);
       }
 
       return token;
