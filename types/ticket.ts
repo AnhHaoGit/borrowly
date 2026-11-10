@@ -23,5 +23,5 @@ export interface Ticket {
 // A ticket joined with its reader and book
 export interface TicketWithDetails extends Ticket {
   reader: Pick<Reader, "id" | "fullName" | "email">;
-  book: Pick<Book, "id" | "title" | "coverUrl">;
+  book: Pick<Book, "id" | "title" | "authorName" | "coverUrl">;
 }
