@@ -117,7 +117,9 @@ const BooksExplorer = ({ genres }: Props) => {
   );
 
   useEffect(() => {
-    if (status !== "authenticated") return;
+    // Khách chưa đăng nhập vẫn xem được danh sách sách; chỉ chờ session tải
+    // xong để biết có kèm trạng thái phiếu của người xem hay không.
+    if (status === "loading") return;
 
     const controller = new AbortController();
 
@@ -176,7 +178,9 @@ const BooksExplorer = ({ genres }: Props) => {
     setPage(1);
   };
 
-  if (status === "loading" || status === "unauthenticated") {
+  // Chỉ chờ trong lúc session đang tải; khách chưa đăng nhập vẫn xem được
+  // danh sách sách (chỉ không có trạng thái phiếu và nút Borrow trỏ tới đăng nhập).
+  if (status === "loading") {
     return <PageLoader label="Loading your library…" />;
   }
 
@@ -216,15 +220,17 @@ const BooksExplorer = ({ genres }: Props) => {
           )}
         </p>
 
-        <p
-          className={`rounded-full px-3 py-1 text-sm ${
-            borrowLimitReached
-              ? "bg-danger/10 font-bold text-danger"
-              : "bg-accent text-primary"
-          }`}
-        >
-          {activeBorrowCount} / {BORROW_LIMIT} books borrowed
-        </p>
+        {isAuthenticated && (
+          <p
+            className={`rounded-full px-3 py-1 text-sm ${
+              borrowLimitReached
+                ? "bg-danger/10 font-bold text-danger"
+                : "bg-accent text-primary"
+            }`}
+          >
+            {activeBorrowCount} / {BORROW_LIMIT} books borrowed
+          </p>
+        )}
       </div>
 
       {error ? (
