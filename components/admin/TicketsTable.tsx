@@ -1,17 +1,19 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { LuChevronDown, LuLoader } from "react-icons/lu";
-import { STATUS_ORDER, STATUS_VIEW } from "@/components/admin/ticket-status";
+import { LuChevronDown, LuLoader, LuTrash2 } from "react-icons/lu";
+import { STATUS_VIEW } from "@/components/admin/ticket-status";
 import LocalTimestamp from "@/components/ui/LocalTimestamp";
 import { daysUntil, formatCalendarDate } from "@/lib/date";
-import { getPickupDeadline } from "@/lib/receipts";
+import { STATUS_TRANSITIONS, getPickupDeadline } from "@/lib/receipts";
 import type { BorrowStatus, TicketWithDetails } from "@/types/ticket";
 
 interface Props {
   tickets: TicketWithDetails[];
   savingId: string | null;
+  deletingId: string | null;
   onStatusChange: (ticket: TicketWithDetails, status: BorrowStatus) => void;
+  onDelete: (ticket: TicketWithDetails) => void;
 }
 
 // 6 cột trên md+; trên mobile mỗi dòng là một thẻ xếp dọc.
@@ -82,7 +84,13 @@ const deadlineView = (ticket: TicketWithDetails) => {
   };
 };
 
-const TicketsTable = ({ tickets, savingId, onStatusChange }: Props) => {
+const TicketsTable = ({
+  tickets,
+  savingId,
+  deletingId,
+  onStatusChange,
+  onDelete,
+}: Props) => {
   return (
     <div role="table" aria-label="Borrow tickets" className="text-primary">
       {/* Hàng tiêu đề (md+) */}
@@ -105,6 +113,9 @@ const TicketsTable = ({ tickets, savingId, onStatusChange }: Props) => {
         {tickets.map((ticket) => {
           const deadline = deadlineView(ticket);
           const saving = savingId === ticket.id;
+          const deleting = deletingId === ticket.id;
+          // Phiếu đã đóng (RETURNED/EXPIRED) không còn lựa chọn nào: chỉ hiện nhãn.
+          const options = STATUS_TRANSITIONS[ticket.status];
 
           return (
             <div
@@ -154,31 +165,61 @@ const TicketsTable = ({ tickets, savingId, onStatusChange }: Props) => {
               </Cell>
 
               <Cell label="Status">
-                <div className="relative w-full max-w-[11rem]">
-                  <select
-                    value={ticket.status}
-                    disabled={saving}
-                    onChange={(event) =>
-                      onStatusChange(
-                        ticket,
-                        event.target.value as BorrowStatus,
-                      )
-                    }
-                    aria-label={`Status for ${ticket.book.title}`}
-                    className={`h-9 w-full cursor-pointer appearance-none rounded-full border px-3 pr-8 text-xs font-bold outline-none transition focus:ring-4 focus:ring-accent/60 disabled:cursor-wait disabled:opacity-70 ${STATUS_VIEW[ticket.status].badge}`}
-                  >
-                    {STATUS_ORDER.map((status) => (
-                      <option key={status} value={status}>
-                        {STATUS_VIEW[status].label}
-                      </option>
-                    ))}
-                  </select>
+                <div className="flex w-full items-center gap-2 md:justify-center">
+                  <div className="relative w-full max-w-[11rem]">
+                    {options.length === 0 ? (
+                      <span
+                        className={`inline-flex h-9 w-full items-center justify-center rounded-full border px-3 text-xs font-bold ${STATUS_VIEW[ticket.status].badge}`}
+                      >
+                        {STATUS_VIEW[ticket.status].label}
+                      </span>
+                    ) : (
+                      <>
+                        <select
+                          value={ticket.status}
+                          disabled={saving || deleting}
+                          onChange={(event) =>
+                            onStatusChange(
+                              ticket,
+                              event.target.value as BorrowStatus,
+                            )
+                          }
+                          aria-label={`Status for ${ticket.book.title}`}
+                          className={`h-9 w-full cursor-pointer appearance-none rounded-full border px-3 pr-8 text-xs font-bold outline-none transition focus:ring-4 focus:ring-accent/60 disabled:cursor-wait disabled:opacity-70 ${STATUS_VIEW[ticket.status].badge}`}
+                        >
+                          <option value={ticket.status} disabled>
+                            {STATUS_VIEW[ticket.status].label}
+                          </option>
+                          {options.map((status) => (
+                            <option key={status} value={status}>
+                              {STATUS_VIEW[status].label}
+                            </option>
+                          ))}
+                        </select>
 
-                  {saving ? (
-                    <LuLoader className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 animate-spin" />
-                  ) : (
-                    <LuChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2" />
-                  )}
+                        {saving ? (
+                          <LuLoader className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 animate-spin" />
+                        ) : (
+                          <LuChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2" />
+                        )}
+                      </>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => onDelete(ticket)}
+                    disabled={deleting || saving}
+                    aria-label={`Delete ticket for ${ticket.book.title}`}
+                    title="Delete ticket"
+                    className="inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-danger/40 text-danger transition hover:bg-danger hover:text-white disabled:cursor-wait disabled:opacity-60"
+                  >
+                    {deleting ? (
+                      <LuLoader className="size-4 animate-spin" />
+                    ) : (
+                      <LuTrash2 className="size-4" />
+                    )}
+                  </button>
                 </div>
               </Cell>
             </div>

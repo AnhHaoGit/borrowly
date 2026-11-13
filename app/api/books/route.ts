@@ -13,6 +13,13 @@ import {
 } from "drizzle-orm";
 import { db } from "@/database/drizzle";
 import { books } from "@/database/schema";
+import {
+  countActiveReceipts,
+  getActiveBorrowStates,
+  sweepReceiptStatuses,
+} from "@/database/receipts";
+import { auth } from "@/auth";
+import type { BorrowStatus } from "@/types/ticket";
 
 const PAGE_SIZE = 12;
 
@@ -115,12 +122,35 @@ export async function GET(request: NextRequest) {
 
     const total = Number(totalResult[0]?.total ?? 0);
 
+    // Trạng thái phiếu của người đang xem + số cuốn họ đang giữ. Số này gồm
+    // PENDING, BORROWED và OVERDUE — đúng ba trạng thái tính vào hạn mức 10 cuốn.
+    const session = await auth();
+    const viewerId = session?.user?.id ?? null;
+
+    let borrowStates: Record<string, BorrowStatus> = {};
+    let activeBorrowCount = 0;
+
+    if (viewerId) {
+      // Đồng bộ trước khi đếm để phiếu PENDING quá 2 ngày không còn bị tính.
+      await sweepReceiptStatuses();
+
+      [borrowStates, activeBorrowCount] = await Promise.all([
+        getActiveBorrowStates(
+          viewerId,
+          items.map((book) => book.id),
+        ),
+        countActiveReceipts(viewerId),
+      ]);
+    }
+
     return NextResponse.json({
       items,
       page,
       pageSize: limit,
       total,
       totalPages: Math.ceil(total / limit),
+      borrowStates,
+      activeBorrowCount,
     });
   } catch (error) {
     console.error("Failed to fetch books:", error);

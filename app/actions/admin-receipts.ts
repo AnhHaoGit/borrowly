@@ -6,7 +6,7 @@ import { db } from "@/database/drizzle";
 import { books, receipts } from "@/database/schema";
 import { getAdminUser } from "@/lib/admin";
 import { APP_TIME_ZONE } from "@/lib/date";
-import { LOAN_PERIOD_DAYS } from "@/lib/receipts";
+import { LOAN_PERIOD_DAYS, STATUS_TRANSITIONS } from "@/lib/receipts";
 import type { BorrowStatus } from "@/types/ticket";
 
 const UUID_RE =
@@ -200,12 +200,21 @@ export async function updateReceiptStatus(
         : { success: false, code: "NOT_FOUND", message: "Receipt not found." };
     }
 
-    // "Quá hạn" chỉ có nghĩa với một phiếu đang mượn.
-    if (nextStatus === "OVERDUE" && receipt.status !== "BORROWED") {
+    // Chỉ hai việc admin được làm: xác nhận đã nhận sách (Pending -> Borrowed)
+    // và xác nhận đã trả (Borrowed/Overdue -> Returned). Pending, Overdue và
+    // Expired còn lại do sweep tự chuyển, phiếu đã đóng thì không đổi được nữa.
+    const allowed = STATUS_TRANSITIONS[receipt.status];
+
+    if (!allowed.includes(nextStatus)) {
       return {
         success: false,
         code: "INVALID",
-        message: "Mark the ticket as borrowed before setting it to overdue.",
+        message:
+          allowed.length === 0
+            ? "This ticket is closed and can't be changed any more."
+            : `A ${receipt.status.toLowerCase()} ticket can only be marked as ${allowed
+                .map((status) => status.toLowerCase())
+                .join(" or ")}.`,
       };
     }
 
@@ -266,6 +275,70 @@ export async function updateReceiptStatus(
       success: false,
       code: "FAILED",
       message: "Unable to update the status. Please try again.",
+    };
+  }
+}
+
+export type DeleteReceiptResult =
+  | { success: true }
+  | {
+      success: false;
+      code: "FORBIDDEN" | "NOT_FOUND" | "FAILED";
+      message: string;
+    };
+
+/**
+ * Xoá hẳn một phiếu mượn (chỉ ở /admin/tickets).
+ *
+ * Phiếu đang giữ một bản sách thì trả bản đó về kho trước khi xoá, nên số lượng
+ * khả dụng vẫn đúng. Lịch sử mượn của phiếu này mất hẳn — UI luôn hỏi lại trước.
+ */
+export async function deleteReceipt(
+  receiptId: string,
+): Promise<DeleteReceiptResult> {
+  const admin = await getAdminUser();
+
+  if (!admin) {
+    return {
+      success: false,
+      code: "FORBIDDEN",
+      message: "You don't have permission to do that.",
+    };
+  }
+
+  if (!UUID_RE.test(receiptId)) {
+    return { success: false, code: "NOT_FOUND", message: "Receipt not found." };
+  }
+
+  try {
+    const [removed] = await db
+      .delete(receipts)
+      .where(eq(receipts.id, receiptId))
+      .returning({ id: receipts.id, bookId: receipts.bookId, status: receipts.status });
+
+    if (!removed) {
+      return { success: false, code: "NOT_FOUND", message: "Receipt not found." };
+    }
+
+    // Phiếu đang giữ một bản sách: trả bản đó về kho trước khi phiếu biến mất.
+    if (HOLDING_STATUSES.includes(removed.status)) {
+      await releaseCopy(removed.bookId);
+    }
+
+    revalidatePath("/admin/tickets");
+    revalidatePath("/profile");
+    revalidatePath("/books");
+    revalidatePath(`/books/${removed.bookId}`);
+    revalidatePath("/admin/books");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to delete receipt:", error);
+
+    return {
+      success: false,
+      code: "FAILED",
+      message: "Unable to delete the ticket. Please try again.",
     };
   }
 }

@@ -1,4 +1,5 @@
 import type { ReceiptWithBook } from "@/types/receipt";
+import type { BorrowStatus } from "@/types/ticket";
 
 // Phiếu PENDING quá 2 ngày không đến nhận sẽ chuyển sang EXPIRED.
 export const PICKUP_WINDOW_DAYS = 2;
@@ -8,6 +9,25 @@ export const LOAN_PERIOD_DAYS = 14;
 
 // Mỗi người chỉ được giữ tối đa 10 cuốn chưa trả (PENDING, BORROWED, OVERDUE).
 export const BORROW_LIMIT = 10;
+
+/**
+ * Việc admin được phép làm với từng trạng thái phiếu ở /admin/tickets.
+ *  - PENDING  -> BORROWED: người đọc đã đến nhận sách;
+ *  - BORROWED -> RETURNED: sách đã trả;
+ *  - OVERDUE  -> RETURNED: trả muộn;
+ *  - RETURNED, EXPIRED: phiếu đã đóng, không đổi được gì nữa.
+ * PENDING, OVERDUE và EXPIRED còn lại là do hệ thống tự chuyển sau 2 và 14 ngày.
+ */
+export const STATUS_TRANSITIONS: Record<
+  BorrowStatus,
+  readonly BorrowStatus[]
+> = {
+  PENDING: ["BORROWED"],
+  BORROWED: ["RETURNED"],
+  OVERDUE: ["RETURNED"],
+  RETURNED: [],
+  EXPIRED: [],
+};
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
