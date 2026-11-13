@@ -5,6 +5,7 @@ import { and, eq, gt, sql, type SQL } from "drizzle-orm";
 import { db } from "@/database/drizzle";
 import { books, receipts } from "@/database/schema";
 import { getAdminUser } from "@/lib/admin";
+import { APP_TIME_ZONE } from "@/lib/date";
 import { LOAN_PERIOD_DAYS } from "@/lib/receipts";
 import type { BorrowStatus } from "@/types/ticket";
 
@@ -77,8 +78,9 @@ const releaseCopy = async (bookId: string): Promise<void> => {
 };
 
 /**
- * Ngày tháng đi kèm mỗi trạng thái, tính bằng CURRENT_DATE của Postgres để
- * không lệch ngày theo múi giờ của máy chủ Node:
+ * Ngày tháng đi kèm mỗi trạng thái, tính bằng ngày hôm nay ở múi giờ của thư
+ * viện (Postgres chạy UTC nên `CURRENT_DATE` sẽ lệch một ngày vào buổi sáng ở
+ * Việt Nam):
  *  - PENDING   : bắt đầu lại cửa sổ 2 ngày đến nhận (createdAt = now);
  *  - BORROWED  : ngày nhận = hôm nay (nếu chưa có) và hạn trả = hôm nay + 14 ngày;
  *  - OVERDUE   : giữ nguyên ngày nhận/hạn trả, chỉ đổi trạng thái;
@@ -107,7 +109,7 @@ const buildPatch = (
       return {
         status: nextStatus,
         borrowDate: current.borrowDate ?? sql`now()`,
-        dueDate: sql`CURRENT_DATE + ${LOAN_PERIOD_DAYS}::int`,
+        dueDate: sql`(now() AT TIME ZONE ${APP_TIME_ZONE})::date + ${LOAN_PERIOD_DAYS}::int`,
         returnDate: null,
       };
 
@@ -115,14 +117,16 @@ const buildPatch = (
       return {
         status: nextStatus,
         borrowDate: current.borrowDate ?? sql`now()`,
-        dueDate: current.dueDate ?? sql`CURRENT_DATE`,
+        dueDate:
+          current.dueDate ?? sql`(now() AT TIME ZONE ${APP_TIME_ZONE})::date`,
         returnDate: null,
       };
 
     case "RETURNED":
       return {
         status: nextStatus,
-        returnDate: current.returnDate ?? sql`CURRENT_DATE`,
+        returnDate:
+          current.returnDate ?? sql`(now() AT TIME ZONE ${APP_TIME_ZONE})::date`,
       };
 
     case "EXPIRED":

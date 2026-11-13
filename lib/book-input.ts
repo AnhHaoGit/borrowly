@@ -105,12 +105,13 @@ export function validateBookInput(
 
   if (!input.language.trim()) errors.language = "Choose a language.";
 
-  if (!input.coverUrl.trim()) errors.coverUrl = "Cover URL is required.";
+  if (!input.coverUrl.trim()) errors.coverUrl = "Upload a cover image.";
   else if (!isHttpUrl(input.coverUrl.trim()))
-    errors.coverUrl = "Enter a valid http(s) URL.";
+    errors.coverUrl = "The cover image link isn't valid. Upload it again.";
 
   if (input.authorImageUrl && !isHttpUrl(input.authorImageUrl))
-    errors.authorImageUrl = "Enter a valid http(s) URL.";
+    errors.authorImageUrl =
+      "The author photo link isn't valid. Upload it again.";
 
   const summary = input.summary.trim();
   if (!summary) errors.summary = "Summary is required.";

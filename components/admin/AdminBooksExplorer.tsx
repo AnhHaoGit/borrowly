@@ -10,6 +10,7 @@ import SearchBar from "@/components/books/SearchBar";
 import AdminBookCard from "@/components/admin/AdminBookCard";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { PageLoader } from "@/components/ui/Loader";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { notify } from "@/lib/toast";
 import type { Book, Filters } from "@/types/book";
 
@@ -40,6 +41,10 @@ const AdminBooksExplorer = ({ genres }: Props) => {
   const [page, setPage] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
 
+  // Chỉ tìm sau khi ngưng gõ 300ms để mỗi ký tự không thành một request.
+  const [queryInput, setQueryInput] = useState("");
+  const debouncedQuery = useDebouncedValue(queryInput, 300);
+
   const [books, setBooks] = useState<Book[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -56,7 +61,7 @@ const AdminBooksExplorer = ({ genres }: Props) => {
       const params = new URLSearchParams();
 
       params.set("page", String(page));
-      params.set("query", filters.query.trim());
+      params.set("query", debouncedQuery.trim());
       params.set("status", filters.status);
       params.set("sort", String(filters.sort));
 
@@ -89,7 +94,7 @@ const AdminBooksExplorer = ({ genres }: Props) => {
         if (!signal.aborted) setIsLoading(false);
       }
     },
-    [page, filters],
+    [page, filters, debouncedQuery],
   );
 
   useEffect(() => {
@@ -121,6 +126,7 @@ const AdminBooksExplorer = ({ genres }: Props) => {
 
   const resetFilters = () => {
     setFilters(DEFAULT_FILTERS);
+    setQueryInput("");
     setPage(1);
   };
 
@@ -176,8 +182,11 @@ const AdminBooksExplorer = ({ genres }: Props) => {
       </div>
 
       <SearchBar
-        value={filters.query}
-        onChange={(query) => updateFilters({ query })}
+        value={queryInput}
+        onChange={(query) => {
+          setQueryInput(query);
+          setPage(1);
+        }}
       />
 
       <FilterPanel
@@ -205,6 +214,10 @@ const AdminBooksExplorer = ({ genres }: Props) => {
             </>
           )}
         </p>
+
+        {isLoading && books.length > 0 && (
+          <span className="text-sm text-muted">Searching…</span>
+        )}
       </div>
 
       {error ? (
@@ -221,7 +234,7 @@ const AdminBooksExplorer = ({ genres }: Props) => {
             Try again
           </button>
         </div>
-      ) : isLoading ? (
+      ) : isLoading && books.length === 0 ? (
         <PageLoader label="Loading books..." />
       ) : books.length === 0 ? (
         <div className="rounded-2xl border-2 border-dashed border-accent-deep/60 bg-surface px-6 py-16 text-center">

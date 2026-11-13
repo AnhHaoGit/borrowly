@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { canOptimizeImage } from "@/lib/images";
 import { LuBookOpen, LuPencil, LuTrash2 } from "react-icons/lu";
 import type { Book } from "@/types/book";
 
@@ -47,6 +48,7 @@ const AdminBookCard = ({ book, onDelete }: Props) => {
               src={book.coverUrl}
               alt={`Cover of ${book.title}`}
               fill
+              unoptimized={!canOptimizeImage(book.coverUrl)}
               sizes="(max-width: 768px) 80vw, 180px"
               className="object-cover transition duration-300 group-hover:scale-[1.02]"
             />

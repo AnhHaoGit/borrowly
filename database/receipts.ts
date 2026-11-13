@@ -1,6 +1,7 @@
 import { and, count, desc, eq, gt, inArray, sql } from "drizzle-orm";
 import { db } from "@/database/drizzle";
 import { books, receipts, users } from "@/database/schema";
+import { APP_TIME_ZONE } from "@/lib/date";
 import { BORROW_LIMIT, PICKUP_WINDOW_DAYS, getPickupDeadline } from "@/lib/receipts";
 import type { ActiveBorrowStates, ReceiptWithBook } from "@/types/receipt";
 import type { BorrowStatus, TicketWithDetails } from "@/types/ticket";
@@ -23,8 +24,21 @@ export const ACTIVE_STATUSES: BorrowStatus[] = [
  * số lượng cho đúng những phiếu vừa chuyển trạng thái thật sự, nên chạy đồng
  * thời cũng không cộng nhầm tồn kho.
  */
+// Mỗi lượt đọc danh sách sách đều gọi sweep, mà mỗi statement tới Neon tốn
+// một round-trip ~300ms. Giới hạn còn tối đa một lượt mỗi 10 giây: trạng thái
+// phụ thuộc thời gian vẫn đúng gần như tức thì, còn gõ tìm kiếm liên tục thì
+// không phải trả giá cho mỗi lần.
+const SWEEP_INTERVAL_MS = 10_000;
+let lastSweepAt = 0;
+
 export const sweepReceiptStatuses = async (): Promise<void> => {
+  if (Date.now() - lastSweepAt < SWEEP_INTERVAL_MS) return;
+
+  lastSweepAt = Date.now();
+
   try {
+    // Ba việc trong MỘT statement: CTE sửa dữ liệu của Postgres luôn chạy hết
+    // dù câu lệnh ngoài cùng không đọc kết quả, nên chỉ tốn một round-trip.
     await db.execute(sql`
       WITH expired AS (
         UPDATE receipts
@@ -37,22 +51,28 @@ export const sweepReceiptStatuses = async (): Promise<void> => {
         SELECT book_id, COUNT(*)::int AS total
         FROM expired
         GROUP BY book_id
+      ),
+      restocked AS (
+        UPDATE books
+        SET available_quantity = books.available_quantity + counted.total
+        FROM counted
+        WHERE books.id = counted.book_id
+        RETURNING books.id
+      ),
+      overdue AS (
+        UPDATE receipts
+        SET status = 'OVERDUE'
+        WHERE status = 'BORROWED'
+          AND due_date IS NOT NULL
+          AND due_date < (now() AT TIME ZONE ${APP_TIME_ZONE})::date
+        RETURNING receipts.id
       )
-      UPDATE books
-      SET available_quantity = books.available_quantity + counted.total
-      FROM counted
-      WHERE books.id = counted.book_id
-    `);
-
-    await db.execute(sql`
-      UPDATE receipts
-      SET status = 'OVERDUE'
-      WHERE status = 'BORROWED'
-        AND due_date IS NOT NULL
-        AND due_date < CURRENT_DATE
+      SELECT 1
     `);
   } catch (error) {
     // Đồng bộ trạng thái là việc phụ: lỗi ở đây không được làm hỏng việc đọc.
+    // Cho phép lần gọi sau thử lại ngay thay vì chờ hết khoảng giãn cách.
+    lastSweepAt = 0;
     console.error("Failed to sync receipt statuses:", error);
   }
 };

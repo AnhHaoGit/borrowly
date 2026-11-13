@@ -2,7 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { canOptimizeImage } from "@/lib/images";
 import { useState, type ReactNode } from "react";
+import LocalTimestamp from "@/components/ui/LocalTimestamp";
 import type { Book } from "@/types/book";
 import type { BorrowStatus } from "@/types/ticket";
 import { BORROW_LIMIT } from "@/lib/receipts";
@@ -39,19 +41,6 @@ interface Props {
 const DESCRIPTION_PREVIEW_CHARS = 480;
 const PUBLISHER_PREVIEW = 3;
 const CHIP_PREVIEW = 8;
-
-const formatDate = (value: Date | string) => {
-  const date = typeof value === "string" ? new Date(value) : value;
-
-  if (Number.isNaN(date.getTime())) return "—";
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(date);
-};
 
 const Badge = ({ icon, children }: { icon: ReactNode; children: ReactNode }) => (
   <span className="inline-flex items-center gap-1.5 rounded-full border border-accent bg-background px-3 py-1 text-xs uppercase tracking-wider text-secondary">
@@ -161,6 +150,7 @@ const BookDetail = ({
                 alt={`Cover of ${book.title}`}
                 fill
                 priority
+                unoptimized={!canOptimizeImage(book.coverUrl)}
                 sizes="(max-width: 768px) 80vw, 300px"
                 className="object-cover"
               />
@@ -213,6 +203,7 @@ const BookDetail = ({
                     src={book.authorImageUrl}
                     alt={book.authorName}
                     fill
+                    unoptimized={!canOptimizeImage(book.authorImageUrl)}
                     sizes="40px"
                     className="object-cover"
                   />
@@ -327,7 +318,7 @@ const BookDetail = ({
               </Field>
 
               <Field icon={<LuClock className="size-3.5" />} label="Added on">
-                {formatDate(book.createdAt)}
+                <LocalTimestamp value={book.createdAt} />
               </Field>
 
               {book.subjects.length > 0 && (

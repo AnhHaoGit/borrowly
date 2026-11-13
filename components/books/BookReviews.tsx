@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useId, useState, type FormEvent } from "react";
 import { LuLoader, LuTrash2 } from "react-icons/lu";
+import LocalTimestamp from "@/components/ui/LocalTimestamp";
 import { StarRating, StarRatingInput } from "@/components/ui/StarRating";
 import { notify } from "@/lib/toast";
 import {
@@ -16,18 +17,6 @@ interface Props {
   initial: ReviewState;
   viewerId: string | null;
 }
-
-const formatDate = (iso: string) => {
-  const date = new Date(iso);
-
-  if (Number.isNaN(date.getTime())) return "";
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
-};
 
 const initials = (name: string) =>
   name
@@ -251,7 +240,7 @@ const BookReviews = ({ bookId, initial, viewerId }: Props) => {
                         )}
                       </p>
                       <p className="text-xs text-muted">
-                        {formatDate(review.updatedAt)}
+                        <LocalTimestamp value={review.updatedAt} />
                       </p>
                     </div>
                   </div>

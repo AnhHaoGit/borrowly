@@ -6,6 +6,7 @@ import FilterPanel from "./FilterPanel";
 import BookGrid from "./BookGrid";
 import Pagination from "./Pagination";
 import { PageLoader } from "@/components/ui/Loader";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { BORROW_LIMIT } from "@/lib/receipts";
 import type { Book, Filters } from "../../types/book";
 import type { BorrowStatus } from "@/types/ticket";
@@ -53,11 +54,12 @@ const BooksExplorer = ({ genres }: Props) => {
   const [activeBorrowCount, setActiveBorrowCount] = useState(0);
 
   const resultsRef = useRef<HTMLDivElement>(null);
-  const { data, status } = useSession();
+  const { status } = useSession();
 
-  const user = data?.user;
-
-  console.log("BooksExplorer user:", user);
+  // Ô search giữ đúng giá trị đang gõ; chỉ sau khi ngưng gõ 300ms mới đưa vào
+  // request, nên gõ nhanh không bắn một request cho mỗi ký tự.
+  const [queryInput, setQueryInput] = useState("");
+  const debouncedQuery = useDebouncedValue(queryInput, 300);
 
   const isAuthenticated = status === "authenticated";
   const borrowLimitReached = activeBorrowCount >= BORROW_LIMIT;
@@ -67,7 +69,7 @@ const BooksExplorer = ({ genres }: Props) => {
       const params = new URLSearchParams();
 
       params.set("page", String(page));
-      params.set("query", filters.query.trim());
+      params.set("query", debouncedQuery.trim());
       params.set("status", filters.status);
       params.set("sort", String(filters.sort));
 
@@ -102,7 +104,7 @@ const BooksExplorer = ({ genres }: Props) => {
         setBorrowStates(data.borrowStates ?? {});
         setActiveBorrowCount(data.activeBorrowCount ?? 0);
         setError(null);
-      } catch (err) {
+      } catch {
         if (signal.aborted) return;
 
         setError("Failed to load books. Please try again.");
@@ -113,7 +115,7 @@ const BooksExplorer = ({ genres }: Props) => {
         }
       }
     },
-    [page, filters],
+    [page, filters, debouncedQuery],
   );
 
   useEffect(() => {
@@ -175,6 +177,7 @@ const BooksExplorer = ({ genres }: Props) => {
 
   const resetFilters = () => {
     setFilters(DEFAULT_FILTERS);
+    setQueryInput("");
     setPage(1);
   };
 
@@ -189,8 +192,11 @@ const BooksExplorer = ({ genres }: Props) => {
       <h1 className="sr-only">Books</h1>
 
       <SearchBar
-        value={filters.query}
-        onChange={(query) => updateFilters({ query })}
+        value={queryInput}
+        onChange={(query) => {
+          setQueryInput(query);
+          setPage(1);
+        }}
       />
 
       <FilterPanel
@@ -246,16 +252,21 @@ const BooksExplorer = ({ genres }: Props) => {
             Try again
           </button>
         </div>
-      ) : isLoading ? (
+      ) : isLoading && books.length === 0 ? (
         <PageLoader label="Loading books..." />
       ) : (
-        <BookGrid
-          books={books}
-          borrowStates={borrowStates}
-          borrowLimitReached={borrowLimitReached}
-          isAuthenticated={isAuthenticated}
-          onBorrowed={handleBorrowed}
-        />
+        <>
+          {/* Giữ kết quả cũ trong lúc tìm lại để danh sách không nhấp nháy. */}
+          {isLoading && <p className="text-sm text-muted">Searching…</p>}
+
+          <BookGrid
+            books={books}
+            borrowStates={borrowStates}
+            borrowLimitReached={borrowLimitReached}
+            isAuthenticated={isAuthenticated}
+            onBorrowed={handleBorrowed}
+          />
+        </>
       )}
 
       <Pagination current={page} total={totalPages} onChange={goToPage} />

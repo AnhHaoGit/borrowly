@@ -1,6 +1,7 @@
 import { desc, eq, sql } from "drizzle-orm";
 import { db } from "@/database/drizzle";
 import { receipts, users } from "@/database/schema";
+import { APP_TIME_ZONE, todayInAppTimeZone } from "@/lib/date";
 import type { ReaderWithStats, Role } from "@/types/reader";
 
 /**
@@ -49,15 +50,15 @@ export const getSessionUserState = async (
 
   if (!row) return null;
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayInAppTimeZone();
 
   if (row.lastActivityDate !== today) {
-    // So sánh bằng CURRENT_DATE của Postgres để không lệch ngày theo múi giờ.
+    // "Hôm nay" cũng so sánh theo múi giờ của thư viện, không phải UTC.
     await db
       .update(users)
-      .set({ lastActivityDate: sql`CURRENT_DATE` })
+      .set({ lastActivityDate: sql`(now() AT TIME ZONE ${APP_TIME_ZONE})::date` })
       .where(
-        sql`${users.id} = ${userId} AND (${users.lastActivityDate} IS NULL OR ${users.lastActivityDate} < CURRENT_DATE)`,
+        sql`${users.id} = ${userId} AND (${users.lastActivityDate} IS NULL OR ${users.lastActivityDate} < (now() AT TIME ZONE ${APP_TIME_ZONE})::date)`,
       );
   }
 

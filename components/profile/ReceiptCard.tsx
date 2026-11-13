@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { canOptimizeImage } from "@/lib/images";
 import type { ReactNode } from "react";
 import {
   LuBookOpen,
@@ -9,6 +10,8 @@ import {
   LuClock,
   LuTriangleAlert,
 } from "react-icons/lu";
+import LocalTimestamp from "@/components/ui/LocalTimestamp";
+import { formatCalendarDate } from "@/lib/date";
 import { getPickupDeadline } from "@/lib/receipts";
 import type { ReceiptWithBook } from "@/types/receipt";
 import type { BorrowStatus } from "@/types/ticket";
@@ -44,36 +47,6 @@ const STATUS_VIEW: Record<
   },
 };
 
-// Cột `date` của Postgres trả về "YYYY-MM-DD": đọc theo UTC để không bị lệch
-// một ngày khi máy chủ chạy ở múi giờ khác.
-const formatCalendarDate = (value: string) => {
-  const [year, month, day] = value.slice(0, 10).split("-").map(Number);
-
-  if (!year || !month || !day) return "—";
-
-  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-};
-
-const formatTimestamp = (
-  value: Date | string,
-  withTime = false,
-): string => {
-  const date = value instanceof Date ? value : new Date(value);
-
-  if (Number.isNaN(date.getTime())) return "—";
-
-  return date.toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    ...(withTime ? { hour: "numeric", minute: "2-digit" } : {}),
-  });
-};
 
 const Meta = ({
   label,
@@ -81,7 +54,7 @@ const Meta = ({
   tone = "default",
 }: {
   label: string;
-  value: string;
+  value: ReactNode;
   tone?: "default" | "danger" | "strong";
 }) => (
   <div className="min-w-0">
@@ -107,7 +80,7 @@ const ReceiptCard = ({ receipt }: { receipt: ReceiptWithBook }) => {
   const overdue = receipt.status === "OVERDUE";
   const awaitingPickup =
     receipt.status === "PENDING" || receipt.status === "EXPIRED";
-  const pickupDeadline = formatTimestamp(getPickupDeadline(receipt.createdAt));
+  const pickupDeadline = getPickupDeadline(receipt.createdAt);
 
   return (
     <article className="flex flex-col gap-4 rounded-2xl border border-accent bg-surface p-4 shadow-soft transition duration-300 hover:shadow-lift sm:flex-row sm:gap-5 sm:p-5">
@@ -121,6 +94,7 @@ const ReceiptCard = ({ receipt }: { receipt: ReceiptWithBook }) => {
             src={receipt.book.coverUrl}
             alt={`Cover of ${receipt.book.title}`}
             fill
+            unoptimized={!canOptimizeImage(receipt.book.coverUrl)}
             sizes="(max-width: 640px) 96px, 112px"
             className="object-cover"
           />
@@ -174,18 +148,21 @@ const ReceiptCard = ({ receipt }: { receipt: ReceiptWithBook }) => {
         <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 border-t border-accent/70 pt-3 sm:grid-cols-3">
           <Meta
             label="Requested"
-            value={formatTimestamp(receipt.createdAt, true)}
+            value={<LocalTimestamp value={receipt.createdAt} withTime />}
             tone="strong"
           />
 
           {awaitingPickup && (
-            <Meta label="Pick up by" value={pickupDeadline} />
+            <Meta
+              label="Pick up by"
+              value={<LocalTimestamp value={pickupDeadline} />}
+            />
           )}
 
           {receipt.borrowDate && (
             <Meta
               label="Borrowed on"
-              value={formatTimestamp(receipt.borrowDate)}
+              value={<LocalTimestamp value={receipt.borrowDate} />}
             />
           )}
 

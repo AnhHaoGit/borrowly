@@ -10,7 +10,9 @@
     "db:generate": "npx drizzle-kit generate",
     "db:migrate": "npx drizzle-kit migrate",
     "db:studio": "npx drizzle-kit studio",
-    "seed:books": "tsx --env-file=.env.local scripts/seed-books.ts"
+    "seed:books": "tsx --env-file=.env.local scripts/seed-books.ts",
+    "search:setup": "tsx --env-file=.env.local scripts/setup-book-search.ts",
+    "es:sync": "tsx --env-file=.env.local scripts/sync-books-to-elasticsearch.ts"
   },
   "dependencies": {
     "@elastic/elasticsearch": "^9.5.1",

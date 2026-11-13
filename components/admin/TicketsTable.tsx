@@ -3,7 +3,8 @@
 import type { ReactNode } from "react";
 import { LuChevronDown, LuLoader } from "react-icons/lu";
 import { STATUS_ORDER, STATUS_VIEW } from "@/components/admin/ticket-status";
-import { daysUntil, formatCalendarDate, formatTimestamp } from "@/lib/date";
+import LocalTimestamp from "@/components/ui/LocalTimestamp";
+import { daysUntil, formatCalendarDate } from "@/lib/date";
 import { getPickupDeadline } from "@/lib/receipts";
 import type { BorrowStatus, TicketWithDetails } from "@/types/ticket";
 
@@ -47,7 +48,7 @@ const deadlineView = (ticket: TicketWithDetails) => {
     const days = Math.ceil((deadline.getTime() - Date.now()) / 86_400_000);
 
     return {
-      value: formatTimestamp(deadline),
+      value: <LocalTimestamp value={deadline} />,
       note:
         days <= 0
           ? "Pickup window closing"
@@ -134,7 +135,7 @@ const TicketsTable = ({ tickets, savingId, onStatusChange }: Props) => {
               </Cell>
 
               <Cell label="Requested" className="text-sm">
-                {formatTimestamp(ticket.createdAt)}
+                <LocalTimestamp value={ticket.createdAt} withTime />
               </Cell>
 
               <Cell label="Deadline" className="text-sm">
