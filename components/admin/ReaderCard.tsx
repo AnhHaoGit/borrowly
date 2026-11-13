@@ -8,7 +8,8 @@ import {
   LuShield,
   LuUser,
 } from "react-icons/lu";
-import { formatCalendarDate, formatTimestamp } from "@/lib/date";
+import LocalTimestamp from "@/components/ui/LocalTimestamp";
+import { formatCalendarDate } from "@/lib/date";
 import type { ReaderWithStats, Role } from "@/types/reader";
 
 interface Props {
@@ -96,7 +97,7 @@ const ReaderCard = ({ reader, isSelf, pending, onChangeRole }: Props) => {
             {reader.totalReceipts === 1 ? "receipt" : "receipts"}
           </Meta>
           <Meta icon={<LuCalendarDays className="size-3.5 shrink-0" />}>
-            Joined {formatTimestamp(reader.createdAt)}
+            Joined <LocalTimestamp value={reader.createdAt} />
           </Meta>
           <Meta icon={<LuCalendarDays className="size-3.5 shrink-0" />}>
             Last active{" "}

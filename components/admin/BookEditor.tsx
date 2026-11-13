@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { canOptimizeImage } from "@/lib/images";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import {
@@ -21,6 +22,8 @@ import {
 } from "react-icons/lu";
 import { createBook, deleteBook, updateBook } from "@/app/actions/admin-books";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import ImageUploadField from "@/components/admin/ImageUploadField";
+import LocalTimestamp from "@/components/ui/LocalTimestamp";
 import TagInput from "@/components/admin/TagInput";
 import {
   BOOK_LANGUAGES,
@@ -29,7 +32,6 @@ import {
   type BookFieldErrors,
   type BookInput,
 } from "@/lib/book-input";
-import { formatDate } from "@/lib/date";
 import { getLanguageName } from "@/lib/languages";
 import { notify } from "@/lib/toast";
 import type { Book } from "@/types/book";
@@ -312,6 +314,7 @@ const BookEditor = ({ mode, book, genres }: Props) => {
                   src={cover}
                   alt="Cover preview"
                   fill
+                  unoptimized={!canOptimizeImage(cover)}
                   sizes="(max-width: 768px) 80vw, 300px"
                   onError={() => setBrokenCover(cover)}
                   className="object-cover"
@@ -324,22 +327,13 @@ const BookEditor = ({ mode, book, genres }: Props) => {
               )}
             </div>
 
-            <div>
-              <Label htmlFor="book-coverUrl">Cover URL</Label>
-              <input
-                id="book-coverUrl"
-                type="url"
-                value={values.coverUrl}
-                onChange={(event) => set("coverUrl", event.target.value)}
-                placeholder="https://…"
-                aria-invalid={Boolean(errors.coverUrl)}
-                aria-describedby={
-                  errors.coverUrl ? "book-coverUrl-error" : undefined
-                }
-                className={`${INPUT} ${borderFor(errors.coverUrl)}`}
-              />
-              <FieldError id="book-coverUrl" message={errors.coverUrl} />
-            </div>
+            <ImageUploadField
+              id="book-coverUrl"
+              label="Cover image"
+              value={values.coverUrl}
+              onChange={(url) => set("coverUrl", url)}
+              error={errors.coverUrl}
+            />
           </div>
 
           {/* Details */}
@@ -367,6 +361,7 @@ const BookEditor = ({ mode, book, genres }: Props) => {
                       src={values.authorImageUrl.trim()}
                       alt={values.authorName || "Author"}
                       fill
+                      unoptimized={!canOptimizeImage(values.authorImageUrl.trim())}
                       sizes="44px"
                       className="object-cover"
                     />
@@ -394,25 +389,13 @@ const BookEditor = ({ mode, book, genres }: Props) => {
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="book-authorImageUrl">Author photo URL (optional)</Label>
-                <input
-                  id="book-authorImageUrl"
-                  type="url"
-                  value={values.authorImageUrl}
-                  onChange={(event) => set("authorImageUrl", event.target.value)}
-                  placeholder="https://…"
-                  aria-invalid={Boolean(errors.authorImageUrl)}
-                  aria-describedby={
-                    errors.authorImageUrl ? "book-authorImageUrl-error" : undefined
-                  }
-                  className={`${INPUT} ${borderFor(errors.authorImageUrl)}`}
-                />
-                <FieldError
-                  id="book-authorImageUrl"
-                  message={errors.authorImageUrl}
-                />
-              </div>
+              <ImageUploadField
+                id="book-authorImageUrl"
+                label="Author photo (optional)"
+                value={values.authorImageUrl}
+                onChange={(url) => set("authorImageUrl", url)}
+                error={errors.authorImageUrl}
+              />
 
               <div className="grid gap-3 sm:grid-cols-3">
                 <div>
@@ -498,7 +481,7 @@ const BookEditor = ({ mode, book, genres }: Props) => {
                   </span>
                   <span className="inline-flex items-center gap-1.5">
                     <LuClock className="size-3.5" />
-                    Added {formatDate(book.createdAt)}
+                    Added <LocalTimestamp value={book.createdAt} />
                   </span>
                 </p>
               )}

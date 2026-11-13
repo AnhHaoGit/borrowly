@@ -3,12 +3,14 @@
 import { useMemo, useState } from "react";
 import { LuChevronDown, LuCircleAlert, LuSearch } from "react-icons/lu";
 import {
+  deleteReceipt,
   updateReceiptStatus,
   type ReceiptSnapshot,
 } from "@/app/actions/admin-receipts";
 import Pagination from "@/components/books/Pagination";
 import TicketsTable from "@/components/admin/TicketsTable";
 import { STATUS_ORDER, STATUS_VIEW } from "@/components/admin/ticket-status";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { PageLoader } from "@/components/ui/Loader";
 import { useAdminFetch } from "@/hooks/useAdminFetch";
 import { getPickupDeadline } from "@/lib/receipts";
@@ -57,12 +59,21 @@ const TicketsExplorer = () => {
   const [page, setPage] = useState(1);
   const [savingId, setSavingId] = useState<string | null>(null);
 
+  // Phiếu đã xoá biến mất ngay khỏi danh sách, không cần tải lại cả trang.
+  const [deletedIds, setDeletedIds] = useState<string[]>([]);
+  const [pendingDelete, setPendingDelete] = useState<TicketWithDetails | null>(
+    null,
+  );
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const items: TicketWithDetails[] = useMemo(
     () =>
-      (data?.tickets ?? []).map((ticket) =>
-        updates[ticket.id] ? { ...ticket, ...updates[ticket.id] } : ticket,
-      ),
-    [data, updates],
+      (data?.tickets ?? [])
+        .filter((ticket) => !deletedIds.includes(ticket.id))
+        .map((ticket) =>
+          updates[ticket.id] ? { ...ticket, ...updates[ticket.id] } : ticket,
+        ),
+    [data, updates, deletedIds],
   );
 
   const counts = useMemo(() => {
@@ -157,6 +168,35 @@ const TicketsExplorer = () => {
     });
   };
 
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+
+    const ticket = pendingDelete;
+
+    setDeletingId(ticket.id);
+
+    const result = await deleteReceipt(ticket.id);
+
+    setDeletingId(null);
+
+    if (!result.success) {
+      notify.error(result.message);
+      return;
+    }
+
+    setPendingDelete(null);
+    setDeletedIds((prev) => [...prev, ticket.id]);
+    setUpdates((prev) => {
+      const next = { ...prev };
+      delete next[ticket.id];
+      return next;
+    });
+
+    notify.success("Ticket deleted", {
+      description: `${ticket.reader.fullName} · ${ticket.book.title}`,
+    });
+  };
+
   const statusTabs: StatusFilter[] = ["ALL", ...STATUS_ORDER];
 
   return (
@@ -184,10 +224,12 @@ const TicketsExplorer = () => {
       <p className="flex items-start gap-2 rounded-xl border border-accent bg-surface px-4 py-3 text-xs leading-relaxed text-muted">
         <LuCircleAlert className="mt-0.5 size-4 shrink-0 text-secondary" />
         <span>
-          Pending tickets expire on their own 2 days after the request and put
-          the copy back on the shelf. Borrowed tickets flip to overdue the day
-          after their due date. Statuses you change here update stock
-          immediately.
+          A ticket starts as Pending when a reader requests a book. Mark it
+          Borrowed once the book is handed over, then Returned when it comes
+          back. Pending tickets expire on their own after 2 days and borrowed
+          tickets flip to overdue once the 14-day loan ends. Returned and
+          expired tickets are closed, and deleting a ticket puts its copy back
+          on the shelf.
         </span>
       </p>
 
@@ -308,7 +350,9 @@ const TicketsExplorer = () => {
             <TicketsTable
               tickets={visible}
               savingId={savingId}
+              deletingId={deletingId}
               onStatusChange={handleStatusChange}
+              onDelete={setPendingDelete}
             />
           )}
 
@@ -319,6 +363,23 @@ const TicketsExplorer = () => {
           />
         </>
       )}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Delete this ticket?"
+        description={
+          pendingDelete
+            ? `${pendingDelete.reader.fullName} · ${pendingDelete.book.title}. The ticket is removed from this list for good, and a copy it still holds goes back on the shelf.`
+            : ""
+        }
+        confirmLabel="Delete ticket"
+        pendingLabel="Deleting…"
+        pending={deletingId !== null}
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          if (deletingId === null) setPendingDelete(null);
+        }}
+      />
     </div>
   );
 };

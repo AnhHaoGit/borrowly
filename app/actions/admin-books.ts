@@ -6,6 +6,10 @@ import { db } from "@/database/drizzle";
 import { books, receipts } from "@/database/schema";
 import { getAdminUser } from "@/lib/admin";
 import {
+  removeBookFromSearchSafely,
+  syncBookToSearch,
+} from "@/lib/sync-book-search";
+import {
   validateBookInput,
   type BookFieldErrors,
   type BookInput,
@@ -87,6 +91,8 @@ export async function createBook(input: BookInput): Promise<AdminBookResult> {
       };
     }
 
+    // Giữ index tìm kiếm khớp với database; lỗi ở đây không làm hỏng việc lưu.
+    await syncBookToSearch(created.id);
     revalidateBooks(created.id);
 
     return { success: true, bookId: created.id };
@@ -141,6 +147,7 @@ export async function updateBook(
       return { success: false, code: "NOT_FOUND", message: "Book not found." };
     }
 
+    await syncBookToSearch(bookId);
     revalidateBooks(bookId);
 
     return { success: true, bookId };
@@ -196,6 +203,7 @@ export async function deleteBook(bookId: string): Promise<AdminBookResult> {
       return { success: false, code: "NOT_FOUND", message: "Book not found." };
     }
 
+    await removeBookFromSearchSafely(bookId);
     revalidateBooks(bookId);
 
     return { success: true, bookId };

@@ -1,5 +1,6 @@
 import { LuCalendarDays, LuMail } from "react-icons/lu";
 import AnonymousAvatar from "@/components/ui/AnonymousAvatar";
+import LocalTimestamp from "@/components/ui/LocalTimestamp";
 
 interface Props {
   user: {
@@ -8,19 +9,6 @@ interface Props {
     createdAt: Date | string;
   };
 }
-
-const formatMemberSince = (value: Date | string) => {
-  const date = value instanceof Date ? value : new Date(value);
-
-  if (Number.isNaN(date.getTime())) return "—";
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(date);
-};
 
 const ProfileCard = ({ user }: Props) => (
   <aside
@@ -46,7 +34,7 @@ const ProfileCard = ({ user }: Props) => (
           Member since
         </dt>
         <dd className="text-right text-sm text-primary">
-          {formatMemberSince(user.createdAt)}
+          <LocalTimestamp value={user.createdAt} />
         </dd>
       </div>
     </dl>
