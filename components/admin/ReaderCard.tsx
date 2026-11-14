@@ -24,12 +24,20 @@ const ROLE_OPTIONS: { value: Role; label: string; icon: typeof LuUser }[] = [
   { value: "ADMIN", label: "Admin", icon: LuShield },
 ];
 
+const getFirstCharacter = (word: string) => {
+  const segmenter = new Intl.Segmenter("en", {
+    granularity: "grapheme",
+  });
+
+  return segmenter.segment(word)[Symbol.iterator]().next().value?.segment ?? "";
+};
+
 const initials = (fullName: string) =>
   fullName
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
-    .map((word) => word[0]?.toUpperCase() ?? "")
+    .map((word) => getFirstCharacter(word).toUpperCase())
     .join("") || "?";
 
 const Meta = ({
@@ -47,6 +55,8 @@ const Meta = ({
 
 const ReaderCard = ({ reader, isSelf, pending, onChangeRole }: Props) => {
   const isAdmin = reader.role === "ADMIN";
+  
+  console.log('Reader fullName:', reader.fullName);
 
   return (
     <article className="flex flex-col gap-4 rounded-2xl border border-accent bg-surface p-4 shadow-soft transition hover:shadow-lift sm:flex-row sm:items-center sm:gap-5 sm:p-5">
