@@ -69,6 +69,14 @@ const reserveCopy = async (bookId: string): Promise<boolean> => {
   return Boolean(row);
 };
 
+/** Tăng số lần cuốn sách đã được mượn xong (hiển thị "N borrows"). */
+const bumpBorrowCount = async (bookId: string): Promise<void> => {
+  await db
+    .update(books)
+    .set({ borrowCount: sql`${books.borrowCount} + 1` })
+    .where(eq(books.id, bookId));
+};
+
 /** Cộng lại một bản vào kho (không bao giờ đẩy số lượng xuống dưới 0). */
 const releaseCopy = async (bookId: string): Promise<void> => {
   await db
@@ -248,6 +256,11 @@ export async function updateReceiptStatus(
 
       // Phiếu đã đóng thì bản sách quay lại kho.
       if (releasing) await releaseCopy(receipt.bookId);
+
+      // Đã trả sách = một lượt mượn hoàn tất, nên số lần mượn của cuốn đó +1.
+      // Chỉ tính ở bước BORROWED/OVERDUE -> RETURNED; phiếu đã RETURNED thì
+      // không đổi trạng thái được nữa nên không thể cộng hai lần.
+      if (nextStatus === "RETURNED") await bumpBorrowCount(receipt.bookId);
 
       revalidatePath("/admin/tickets");
       revalidatePath("/profile");
